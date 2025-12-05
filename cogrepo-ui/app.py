@@ -422,12 +422,16 @@ def api_conversations():
 
 @app.route('/api/conversation/<path:convo_id>')
 def api_conversation(convo_id):
-    """Get a single conversation by ID"""
+    """Get a single conversation by ID with related conversations and projects"""
     try:
         repo_path = get_repo_path()
 
         if not os.path.exists(repo_path):
             return jsonify({'error': 'No conversations found'}), 404
+
+        # Load all conversations (needed for chain/project detection)
+        all_conversations = []
+        target_conversation = None
 
         with open(repo_path, 'r', encoding='utf-8') as f:
             for line in f:
@@ -435,13 +439,57 @@ def api_conversation(convo_id):
                 if line:
                     try:
                         conv = json.loads(line)
+                        all_conversations.append(conv)
                         # Check both convo_id and external_id
                         if conv.get('convo_id') == convo_id or conv.get('external_id') == convo_id:
-                            return jsonify(conv)
+                            target_conversation = conv
                     except (json.JSONDecodeError, ValueError):
                         continue
 
-        return jsonify({'error': 'Conversation not found'}), 404
+        if not target_conversation:
+            return jsonify({'error': 'Conversation not found'}), 404
+
+        # Add related conversations (chains) on-demand
+        include_chains = request.args.get('include_chains', 'true').lower() == 'true'
+        if include_chains:
+            try:
+                from context.chain_detection import find_related
+                related = find_related(target_conversation, all_conversations, max_results=5)
+                target_conversation['_related_conversations'] = [
+                    {
+                        'convo_id': r[0].get('convo_id'),
+                        'title': r[0].get('title', r[0].get('generated_title', 'Untitled')),
+                        'score': r[1],
+                        'relation_type': r[2],
+                        'timestamp': r[0].get('timestamp', r[0].get('created_at', ''))
+                    }
+                    for r in related
+                ]
+            except Exception as e:
+                print(f"  [!!] Chain detection error: {e}")
+                target_conversation['_related_conversations'] = []
+
+        # Add project membership on-demand
+        include_projects = request.args.get('include_projects', 'true').lower() == 'true'
+        if include_projects:
+            try:
+                from context.project_inference import ProjectInferrer
+                inferrer = ProjectInferrer(min_conversations=2)
+                signals = inferrer.extract_signals(target_conversation)
+
+                # Return project signals for this conversation
+                target_conversation['_project_signals'] = {
+                    'project_roots': list(signals['project_roots']),
+                    'repo_names': list(signals['repo_names']),
+                    'git_repos': list(signals['git_repos']),
+                    'technologies': list(signals['technologies']),
+                    'file_extensions': dict(signals['file_extensions'].most_common(5))
+                }
+            except Exception as e:
+                print(f"  [!!] Project inference error: {e}")
+                target_conversation['_project_signals'] = {}
+
+        return jsonify(target_conversation)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -449,7 +497,7 @@ def api_conversation(convo_id):
 
 @app.route('/api/search')
 def api_search():
-    """Search conversations"""
+    """Search conversations using hybrid search (BM25 + semantic)"""
     try:
         query = request.args.get('q', '')
         source = request.args.get('source', '')
@@ -460,80 +508,226 @@ def api_search():
         page = request.args.get('page', 1, type=int)
         limit = min(request.args.get('limit', 25, type=int), 1000)  # Cap at 1000
 
+        # Search mode flags
+        semantic_only = request.args.get('semantic_only', 'false').lower() == 'true'
+        bm25_only = request.args.get('bm25_only', 'false').lower() == 'true'
+
         repo_path = get_repo_path()
 
         if not os.path.exists(repo_path):
             return jsonify({'results': [], 'total': 0, 'page': page, 'limit': limit})
 
-        conversations = []
-        with open(repo_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    try:
-                        conv = json.loads(line)
-                        conversations.append(conv)
-                    except (json.JSONDecodeError, ValueError):
-                        continue
+        # If no query, return recent conversations (fallback to original behavior)
+        if not query:
+            conversations = []
+            with open(repo_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        try:
+                            conv = json.loads(line)
 
-        # Apply search
-        results = []
-        query_lower = query.lower() if query else ''
+                            # Apply filters
+                            if source and conv.get('source', '') != source:
+                                continue
+                            if tag:
+                                conv_tags = [t.lower() for t in conv.get('tags', [])]
+                                if tag.lower() not in conv_tags:
+                                    continue
+                            if date_from and conv.get('create_time', '') < date_from:
+                                continue
+                            if date_to and conv.get('create_time', '') > date_to:
+                                continue
+                            if min_score is not None:
+                                conv_score = conv.get('score', 0)
+                                if conv_score < min_score:
+                                    continue
 
-        for conv in conversations:
-            # Text search
-            if query_lower:
-                title = conv.get('generated_title', conv.get('title', '')).lower()
-                text = conv.get('raw_text', '').lower()
-                summary = conv.get('summary_abstractive', '').lower()
-                tags = ' '.join(conv.get('tags', [])).lower()
+                            conversations.append(conv)
+                        except (json.JSONDecodeError, ValueError):
+                            continue
 
-                if not any(query_lower in field for field in [title, text, summary, tags]):
-                    continue
+            # Sort by date (newest first)
+            conversations.sort(
+                key=lambda x: x.get('create_time', x.get('timestamp', '')),
+                reverse=True
+            )
 
-            # Source filter
-            if source and conv.get('source', '') != source:
-                continue
+            total = len(conversations)
+            offset = (page - 1) * limit
+            conversations = conversations[offset:offset + limit]
 
-            # Tag filter (exact match, case-insensitive)
-            if tag:
-                conv_tags = [t.lower() for t in conv.get('tags', [])]
-                if tag.lower() not in conv_tags:
-                    continue
+            return jsonify({
+                'results': conversations,
+                'total': total,
+                'page': page,
+                'limit': limit
+            })
 
-            # Date filters
-            conv_date = conv.get('create_time', conv.get('timestamp', ''))
-            if date_from and conv_date < date_from:
-                continue
-            if date_to and conv_date > date_to:
-                continue
+        # Use hybrid search for queries
+        try:
+            from search.hybrid_search import HybridSearcher
+            from search.embeddings import EmbeddingStore
 
-            # Score filter
-            if min_score is not None:
-                conv_score = conv.get('score', conv.get('relevance', 0))
-                if conv_score < min_score:
-                    continue
+            # Initialize embedding store
+            embeddings_path = str(Path(__file__).parent.parent / 'data' / 'embeddings.npy')
+            embedding_store = None
 
-            results.append(conv)
+            if os.path.exists(embeddings_path) and not bm25_only:
+                try:
+                    embedding_store = EmbeddingStore(embeddings_path)
+                    print(f"  [OK] Loaded embeddings from {embeddings_path}")
+                except Exception as e:
+                    print(f"  [!!] Failed to load embeddings: {e}")
+                    if semantic_only:
+                        # Can't do semantic-only without embeddings
+                        return jsonify({'error': 'Embeddings not available for semantic search'}), 400
 
-        # Sort by date (newest first)
-        results.sort(
-            key=lambda x: x.get('create_time', x.get('timestamp', '')),
-            reverse=True
-        )
+            # Initialize hybrid searcher
+            db_path = str(Path(__file__).parent.parent / 'data' / 'conversations.db')
+            searcher = HybridSearcher(
+                db_path=db_path,
+                embedding_store=embedding_store,
+                bm25_weight=0.5,
+                semantic_weight=0.5,
+                rrf_k=60
+            )
 
-        total = len(results)
+            # Build index if needed (only on first run or if stale)
+            if not os.path.exists(db_path):
+                print(f"  [*] Building search index from {repo_path}...")
+                from search_engine import SearchEngine
 
-        # Paginate
-        offset = (page - 1) * limit
-        results = results[offset:offset + limit]
+                # Use SearchEngine to build the database with FTS5 index
+                engine = SearchEngine(db_path=db_path)
 
-        return jsonify({
-            'results': results,
-            'total': total,
-            'page': page,
-            'limit': limit
-        })
+                # Load conversations from JSONL and index them
+                conversations = []
+                with open(repo_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            try:
+                                conversations.append(json.loads(line))
+                            except (json.JSONDecodeError, ValueError):
+                                continue
+
+                count = engine.index_conversations(conversations)
+                print(f"  [OK] Indexed {count} conversations")
+
+            # Perform hybrid search
+            search_results = searcher.search(
+                query=query,
+                limit=limit * 10,  # Get more results for filtering
+                source_filter=source if source else None,
+                tag_filter=tag if tag else None,
+                min_score=min_score if min_score is not None else 0.0,
+                semantic_only=semantic_only,
+                bm25_only=bm25_only
+            )
+
+            # Convert SearchResult objects to dicts and apply remaining filters
+            results = []
+            for sr in search_results:
+                # Load full conversation from repo
+                with open(repo_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            try:
+                                conv = json.loads(line)
+                                if conv.get('convo_id') == sr.convo_id:
+                                    # Apply date filters
+                                    conv_date = conv.get('create_time', '')
+                                    if date_from and conv_date < date_from:
+                                        break
+                                    if date_to and conv_date > date_to:
+                                        break
+
+                                    # Add search metadata
+                                    conv['_search'] = {
+                                        'score': sr.score,
+                                        'bm25_score': sr.bm25_score,
+                                        'semantic_score': sr.semantic_score,
+                                        'matched_terms': sr.matched_terms
+                                    }
+                                    results.append(conv)
+                                    break
+                            except (json.JSONDecodeError, ValueError):
+                                continue
+
+            total = len(results)
+
+            # Paginate
+            offset = (page - 1) * limit
+            results = results[offset:offset + limit]
+
+            return jsonify({
+                'results': results,
+                'total': total,
+                'page': page,
+                'limit': limit,
+                'search_mode': 'semantic_only' if semantic_only else ('bm25_only' if bm25_only else 'hybrid')
+            })
+
+        except ImportError as e:
+            print(f"  [!!] Hybrid search not available: {e}")
+            print("  [*] Falling back to basic text search")
+            # Fall back to original search implementation
+            conversations = []
+            with open(repo_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        try:
+                            conv = json.loads(line)
+
+                            # Simple text matching
+                            query_lower = query.lower()
+                            title = conv.get('generated_title', '').lower()
+                            text = conv.get('raw_text', '').lower()
+                            summary = conv.get('summary_abstractive', '').lower()
+                            tags = ' '.join(conv.get('tags', [])).lower()
+
+                            if not any(query_lower in field for field in [title, text, summary, tags]):
+                                continue
+
+                            # Apply filters
+                            if source and conv.get('source', '') != source:
+                                continue
+                            if tag:
+                                conv_tags = [t.lower() for t in conv.get('tags', [])]
+                                if tag.lower() not in conv_tags:
+                                    continue
+                            if date_from and conv.get('create_time', '') < date_from:
+                                continue
+                            if date_to and conv.get('create_time', '') > date_to:
+                                continue
+                            if min_score is not None:
+                                conv_score = conv.get('score', 0)
+                                if conv_score < min_score:
+                                    continue
+
+                            conversations.append(conv)
+                        except (json.JSONDecodeError, ValueError):
+                            continue
+
+            conversations.sort(
+                key=lambda x: x.get('create_time', x.get('timestamp', '')),
+                reverse=True
+            )
+
+            total = len(conversations)
+            offset = (page - 1) * limit
+            conversations = conversations[offset:offset + limit]
+
+            return jsonify({
+                'results': conversations,
+                'total': total,
+                'page': page,
+                'limit': limit,
+                'search_mode': 'fallback'
+            })
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -541,8 +735,12 @@ def api_search():
 
 @app.route('/api/semantic_search')
 def api_semantic_search():
-    """Semantic search - for now, falls back to regular search"""
-    # Could be enhanced with vector embeddings later
+    """Semantic search using embeddings"""
+    # Redirect to main search with semantic_only flag
+    from flask import request as flask_request
+    args = dict(flask_request.args)
+    args['semantic_only'] = 'true'
+    flask_request.args = args
     return api_search()
 
 
@@ -707,6 +905,54 @@ def api_sources():
         return jsonify({'sources': sources})
 
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects')
+def api_projects():
+    """Get all detected projects across conversations"""
+    try:
+        repo_path = get_repo_path()
+
+        if not os.path.exists(repo_path):
+            return jsonify({'projects': []})
+
+        # Load all conversations
+        conversations = []
+        with open(repo_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        conversations.append(json.loads(line))
+                    except (json.JSONDecodeError, ValueError):
+                        continue
+
+        # Infer projects
+        from context.project_inference import ProjectInferrer
+        inferrer = ProjectInferrer(min_conversations=2, min_confidence=0.3)
+        projects = inferrer.infer_projects(conversations)
+
+        # Format for API response
+        projects_data = [
+            {
+                'name': p.name,
+                'conversation_count': len(p.conversation_ids),
+                'technologies': list(p.technologies),
+                'confidence': p.confidence,
+                'keywords': list(p.keywords),
+                # Don't include full conversation list to keep response small
+                # Clients can request individual conversations if needed
+            }
+            for p in projects
+        ]
+
+        return jsonify({'projects': projects_data, 'total': len(projects_data)})
+
+    except Exception as e:
+        import traceback
+        print(f"  [!!] Project API error: {e}")
+        print(f"  Traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 

@@ -164,14 +164,14 @@ class HybridSearcher:
             sql = """
                 SELECT
                     c.convo_id,
-                    c.generated_title,
-                    c.summary_abstractive,
+                    c.title,
+                    c.summary,
                     c.source,
-                    c.created_at,
+                    c.timestamp,
                     c.tags,
                     bm25(conversations_fts) as rank
                 FROM conversations_fts
-                JOIN conversations c ON conversations_fts.rowid = c.id
+                JOIN conversations c ON conversations_fts.convo_id = c.convo_id
                 WHERE conversations_fts MATCH ?
             """
 
@@ -195,14 +195,14 @@ class HybridSearcher:
 
                 result = SearchResult(
                     convo_id=row['convo_id'],
-                    title=row['generated_title'] or '',
-                    summary=row['summary_abstractive'] or '',
+                    title=row['title'] or '',
+                    summary=row['summary'] or '',
                     score=normalized_score,
                     bm25_score=normalized_score,
                     semantic_score=0.0,
                     matched_terms=self._extract_matched_terms(query, row),
                     source=row['source'] or '',
-                    created_at=row['created_at'] or '',
+                    created_at=row['timestamp'] or '',
                     tags=self._parse_tags(row['tags']),
                 )
 
@@ -216,7 +216,9 @@ class HybridSearcher:
             return results
 
         except Exception as e:
+            import traceback
             print(f"BM25 search error: {e}")
+            print(f"Traceback: {traceback.format_exc()}")
             return []
 
         finally:
@@ -261,8 +263,8 @@ class HybridSearcher:
                 convo_id = self.embedding_store.ids[idx]
 
                 cursor = conn.execute("""
-                    SELECT convo_id, generated_title, summary_abstractive,
-                           source, created_at, tags
+                    SELECT convo_id, title, summary,
+                           source, timestamp, tags
                     FROM conversations
                     WHERE convo_id = ?
                 """, (convo_id,))
@@ -277,14 +279,14 @@ class HybridSearcher:
 
                 result = SearchResult(
                     convo_id=row['convo_id'],
-                    title=row['generated_title'] or '',
-                    summary=row['summary_abstractive'] or '',
+                    title=row['title'] or '',
+                    summary=row['summary'] or '',
                     score=score,
                     bm25_score=0.0,
                     semantic_score=score,
                     matched_terms=[],
                     source=row['source'] or '',
-                    created_at=row['created_at'] or '',
+                    created_at=row['timestamp'] or '',
                     tags=self._parse_tags(row['tags']),
                 )
 
@@ -398,7 +400,7 @@ class HybridSearcher:
         query_terms = set(query.lower().split())
         matched = []
 
-        text = f"{row['generated_title'] or ''} {row['summary_abstractive'] or ''}".lower()
+        text = f"{row['title'] or ''} {row['summary'] or ''}".lower()
 
         for term in query_terms:
             if term in text:
