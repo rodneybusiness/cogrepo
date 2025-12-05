@@ -133,14 +133,18 @@ CONVERSATION:
 
 CURRENT TITLE: {existing_title if existing_title else "None"}
 
-INSTRUCTIONS:
-- Output ONLY the title text, nothing else
-- Do NOT include explanations like "This title is better because..."
-- Do NOT use quotes around the title
-- Make it 40-80 characters
-- Capture the main topic/purpose
-- Be specific and descriptive
-- Use clear, professional language
+TITLE GENERATION RULES:
+1. If conversation covers MULTIPLE distinct topics (3+), use format: "Topic A + Topic B + Topic C"
+   Example: "React Hooks + TypeScript Generics + Testing Strategy"
+2. If TWO main topics, use format: "Topic A & Topic B"
+   Example: "JWT Authentication & Role-Based Access Control"
+3. If SINGLE focused topic, use clear descriptive title
+   Example: "Implementing Stripe Payment Integration"
+4. Front-load the most important keywords
+5. Keep under 80 characters
+6. NO quotes, NO "This conversation is about...", NO explanations
+
+Output ONLY the title text.
 
 Title:"""
 
@@ -285,20 +289,23 @@ Summary:"""
         raw_text = conversation.get("raw_text", "")[:5000]
         existing_tags = conversation.get("tags", [])
 
-        prompt = f"""Extract 10-15 precise, descriptive tags from this conversation.
+        prompt = f"""Extract 5-8 broad, reusable tags from this conversation.
 
 CONVERSATION:
 {raw_text}
 
-CURRENT TAGS: {', '.join(existing_tags) if existing_tags else "None"}
+Tag Selection Criteria:
+1. USE EXISTING COMMON TAGS when possible (Animation, Python, React, Testing, Design, Database, API, etc.)
+2. Prefer technology names, methodologies, broad domains (not overly specific use-cases)
+3. Hierarchical: Start broad (Web Development), add specifics only if truly critical (GraphQL API)
+4. NO quotes, NO brackets, NO meta-commentary like [10-15 specific
+5. Tags must be reusable across multiple similar conversations
+6. Favor established terms over invented phrases
 
-Generate better tags that are:
-1. Specific and descriptive (not generic)
-2. Technical concepts, frameworks, methodologies
-3. Key topics and domain terminology
-4. Problem types and solution patterns
+Examples of GOOD tags: Python, React Hooks, API Design, Performance Optimization, Testing Strategy, Animation, Character Development
+Examples of BAD tags: "1980s Nostalgia", [10-15 specific, descriptive tags], "Custom useEffect Pattern for Modal State Management"
 
-Format: Return comma-separated list only.
+Format: Comma-separated list only, no quotes or brackets.
 
 Tags:"""
 
@@ -312,10 +319,10 @@ Tags:"""
         # Parse tags
         tags_text = response.content[0].text.strip()
         new_tags = [
-            tag.strip()
+            tag.strip().strip('"').strip("'").strip('[').strip(']')  # Remove quotes and brackets
             for tag in tags_text.split(',')
             if tag.strip() and len(tag.strip()) > 2
-        ][:15]
+        ][:8]  # Max 8 tags per conversation
 
         # Calculate cost
         cost = (
