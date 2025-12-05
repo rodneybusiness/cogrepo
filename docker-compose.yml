@@ -1,0 +1,133 @@
+# =============================================================================
+# CogRepo Docker Compose Configuration
+# =============================================================================
+#
+# Quick Start:
+#   docker-compose up -d
+#
+# With API key:
+#   ANTHROPIC_API_KEY=sk-ant-... docker-compose up -d
+#
+# View logs:
+#   docker-compose logs -f
+#
+# Stop:
+#   docker-compose down
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # CogRepo Application
+  # ---------------------------------------------------------------------------
+  cogrepo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cogrepo:latest
+    container_name: cogrepo
+
+    # Port mapping
+    ports:
+      - "${PORT:-5001}:5001"
+
+    # Environment variables
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - PORT=5001
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GUNICORN_WORKERS=${GUNICORN_WORKERS:-4}
+      - GUNICORN_LOG_LEVEL=${GUNICORN_LOG_LEVEL:-info}
+
+    # Persistent storage
+    volumes:
+      # Data directory (conversations, database, embeddings)
+      - ./data:/app/data
+
+      # Optional: Config override
+      - ./config:/app/config:ro
+
+      # Optional: User's cogrepo config (for API key)
+      - ~/.cogrepo:/home/cogrepo/.cogrepo:ro
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # Development Mode (optional)
+  # ---------------------------------------------------------------------------
+  cogrepo-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cogrepo:dev
+    container_name: cogrepo-dev
+    profiles:
+      - dev  # Only start with: docker-compose --profile dev up
+
+    ports:
+      - "${DEV_PORT:-5002}:5001"
+
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - PORT=5001
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+
+    volumes:
+      # Mount source code for live reload
+      - ./cogrepo-ui:/app/cogrepo-ui
+      - ./core:/app/core
+      - ./database:/app/database
+      - ./enrichment:/app/enrichment
+      - ./search:/app/search
+      - ./context:/app/context
+      - ./parsers:/app/parsers
+      - ./data:/app/data
+      - ./config:/app/config
+
+    # Override command for development
+    command: >
+      python cogrepo-ui/app.py
+
+    restart: "no"
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  cogrepo-data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  default:
+    name: cogrepo-network

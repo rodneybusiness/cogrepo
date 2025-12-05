@@ -1,0 +1,42 @@
+{
+  "name": "cogrepo-explorer",
+  "version": "1.0.0",
+  "description": "An elegant UI for exploring COGREPO conversation data",
+  "main": "server.js",
+  "scripts": {
+    "start": "python3 server.py",
+    "dev": "npx live-server --port=3000",
+    "build": "echo 'No build step required for current version'",
+    "create-react": "npx create-react-app cogrepo-react --template typescript"
+  },
+  "keywords": [
+    "cogrepo",
+    "conversations",
+    "search",
+    "ui",
+    "explorer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "cors": "^2.8.5"
+  },
+  "claude-code": {
+    "suggestions": [
+      "Add React for better interactivity",
+      "Implement Elasticsearch for better search",
+      "Add D3.js for data visualization",
+      "Create a REST API with Express",
+      "Add user authentication with Auth0",
+      "Implement real-time search with debouncing",
+      "Add export to PDF functionality",
+      "Create conversation analytics dashboard",
+      "Add semantic search with embeddings",
+      "Implement conversation clustering"
+    ]
+  }
+}

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#667eea">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="CogRepo - Explore and search your AI conversation archive">
+
+  <title>CogRepo Explorer</title>
+
+  <!-- Preconnect to API -->
+  <link rel="preconnect" href="http://localhost:8000">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="static/css/design-system.css">
+  <link rel="stylesheet" href="static/css/components.css">
+
+  <style>
+    /* Page-specific styles */
+    .app-wrapper {
+      min-height: 100vh;
+      padding: var(--space-5);
+    }
+
+    @media (min-width: 640px) {
+      .app-wrapper {
+        padding: var(--space-8);
+      }
+    }
+
+    /* Toast slide-out animation */
+    @keyframes slide-out {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
+
+    /* Search input icon */
+    .search-icon {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    /* Message text formatting */
+    .message-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Loading message */
+    .loading-message {
+      margin-top: var(--space-3);
+      font-size: var(--font-size-sm);
+      color: var(--color-neutral-600);
+    }
+
+    /* Raw text container */
+    .raw-text-container {
+      background: var(--color-neutral-50);
+      padding: var(--space-4);
+      border-radius: var(--radius-lg);
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    /* Initial state styling */
+    .initial-state {
+      margin-top: var(--space-8);
+    }
+  </style>
+</head>
+<body>
+  <!-- Skip Link for Accessibility -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <div class="app-wrapper">
+    <div class="container">
+      <!-- Header -->
+      <header class="app-header">
+        <h1 class="app-logo">CogRepo</h1>
+        <p class="app-tagline">Explore Your AI Conversation Archive</p>
+      </header>
+
+      <!-- Main Content -->
+      <main id="main-content">
+        <!-- Search Panel -->
+        <section class="search-panel" aria-label="Search conversations">
+          <form class="search-form" role="search" onsubmit="return false;">
+            <!-- Search Bar -->
+            <div class="search-bar">
+              <div class="search-input-wrapper">
+                <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="search"
+                  id="searchInput"
+                  class="input input-search"
+                  placeholder="Search conversations... (⌘K)"
+                  aria-label="Search conversations"
+                  autocomplete="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                >
+              </div>
+              <div class="search-actions">
+                <button
+                  type="button"
+                  id="searchBtn"
+                  class="btn btn-primary"
+                  aria-label="Search"
+                >
+                  Search
+                </button>
+                <button
+                  type="button"
+                  id="semanticSearchBtn"
+                  class="btn btn-secondary search-type-btn"
+                  aria-label="Semantic search - AI-powered contextual search"
+                  title="Semantic Search"
+                >
+                  🧠
+                  <span class="tooltip">AI Semantic Search</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Filters Row -->
+            <div class="filter-row">
+              <div class="filter-group">
+                <label class="filter-label" for="sourceFilter">Source</label>
+                <select id="sourceFilter" class="input select filter-select">
+                  <option value="">All Sources</option>
+                  <option value="OpenAI">ChatGPT</option>
+                  <option value="Anthropic">Claude</option>
+                  <option value="Google">Gemini</option>
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label class="filter-label" for="dateFrom">From</label>
+                <input
+                  type="date"
+                  id="dateFrom"
+                  class="input filter-input"
+                  aria-label="Filter from date"
+                >
+              </div>
+
+              <div class="filter-group">
+                <label class="filter-label" for="dateTo">To</label>
+                <input
+                  type="date"
+                  id="dateTo"
+                  class="input filter-input"
+                  aria-label="Filter to date"
+                >
+              </div>
+
+              <div class="filter-group">
+                <label class="filter-label" for="scoreFilter">Min Score</label>
+                <select id="scoreFilter" class="input select filter-select">
+                  <option value="0">Any</option>
+                  <option value="5">5+</option>
+                  <option value="6">6+</option>
+                  <option value="7">7+</option>
+                  <option value="8">8+</option>
+                  <option value="9">9+</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Quick Filters -->
+            <div class="quick-filters">
+              <span class="quick-filter-label">Quick:</span>
+              <button type="button" class="btn btn-sm btn-ghost" data-quick-filter="score:>8">⭐ Top Rated</button>
+              <button type="button" class="btn btn-sm btn-ghost" data-quick-filter="source:OpenAI">🟢 ChatGPT</button>
+              <button type="button" class="btn btn-sm btn-ghost" data-quick-filter="source:Anthropic">🟡 Claude</button>
+              <button type="button" class="btn btn-sm btn-ghost" data-quick-filter="source:Google">🔵 Gemini</button>
+              <button type="button" class="btn btn-sm btn-ghost" data-quick-filter="tag:code">💻 Code</button>
+            </div>
+
+            <!-- Saved Searches -->
+            <div id="savedSearches" class="saved-searches" style="display: none;"></div>
+
+            <!-- Search Tips -->
+            <div class="search-tips">
+              <strong>Tips:</strong>
+              Use <code>tag:coding</code> for tags,
+              <code>"exact phrase"</code> for exact matches,
+              <code>score:>7</code> for high-quality conversations
+            </div>
+          </form>
+        </section>
+
+        <!-- Results Area -->
+        <section class="results-area" aria-label="Search results">
+          <!-- Results Header -->
+          <div id="resultsHeader" class="results-header" style="display: none;"></div>
+
+          <!-- Results Container -->
+          <div id="results" role="region" aria-live="polite" aria-label="Conversation results">
+            <!-- Results will be rendered here -->
+          </div>
+
+          <!-- Pagination -->
+          <nav id="pagination" class="pagination" aria-label="Results pagination"></nav>
+        </section>
+      </main>
+
+      <!-- Keyboard Shortcuts Help Button -->
+      <div class="shortcuts-help no-print">
+        <button class="shortcuts-btn" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
+            <path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M6 16h12"></path>
+          </svg>
+        </button>
+        <div class="shortcuts-panel">
+          <h3 class="shortcuts-title">Keyboard Shortcuts</h3>
+          <div class="shortcuts-list">
+            <div class="shortcut-item">
+              <span class="shortcut-desc">Focus search</span>
+              <span class="shortcut-key"><kbd>⌘</kbd><kbd>K</kbd></span>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-desc">Save search</span>
+              <span class="shortcut-key"><kbd>⌘</kbd><kbd>S</kbd></span>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-desc">Export results</span>
+              <span class="shortcut-key"><kbd>⌘</kbd><kbd>E</kbd></span>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-desc">Clear/close</span>
+              <span class="shortcut-key"><kbd>Esc</kbd></span>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-desc">Next result</span>
+              <span class="shortcut-key"><kbd>J</kbd></span>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-desc">Previous result</span>
+              <span class="shortcut-key"><kbd>K</kbd></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conversation Modal -->
+  <div id="conversationModal-backdrop" class="modal-backdrop" data-modal-id="conversationModal"></div>
+  <div id="conversationModal" class="modal conversation-modal" role="dialog" aria-modal="true" aria-labelledby="conversationModalTitle">
+    <div class="modal-header">
+      <h2 id="conversationModalTitle" class="modal-title">Conversation</h2>
+      <button type="button" class="modal-close" aria-label="Close modal" onclick="CogRepoUI.modal.close('conversationModal')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <!-- Content rendered dynamically -->
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="CogRepoUI.modal.close('conversationModal')">Close</button>
+      <button type="button" class="btn btn-success" onclick="app.exportResults()" aria-label="Export this conversation">
+        📥 Export
+      </button>
+    </div>
+  </div>
+
+  <!-- Keyboard Help Modal -->
+  <div id="keyboardHelpModal-backdrop" class="modal-backdrop" data-modal-id="keyboardHelpModal"></div>
+  <div id="keyboardHelpModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="keyboardHelpTitle" style="max-width: 400px;">
+    <div class="modal-header">
+      <h2 id="keyboardHelpTitle" class="modal-title">Keyboard Shortcuts</h2>
+      <button type="button" class="modal-close" aria-label="Close" onclick="CogRepoUI.modal.close('keyboardHelpModal')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <!-- Content rendered dynamically -->
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Scripts -->
+  <script src="static/js/api.js" type="module"></script>
+  <script src="static/js/ui.js" type="module"></script>
+  <script src="static/js/app.js" type="module"></script>
+
+  <!-- Fallback for browsers without module support -->
+  <script nomodule>
+    document.body.innerHTML = '<div style="padding: 2rem; text-align: center;"><h1>Browser Not Supported</h1><p>Please use a modern browser like Safari, Chrome, Firefox, or Edge.</p></div>';
+  </script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('/sw.js');
+          console.log('Service Worker registered:', registration.scope);
+
+          // Check for updates
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New content available - show update toast
+                if (window.CogRepoUI?.toast) {
+                  window.CogRepoUI.toast.info('New version available!', {
+                    duration: 0,
+                    action: {
+                      label: 'Refresh',
+                      onClick: () => window.location.reload()
+                    }
+                  });
+                }
+              }
+            });
+          });
+        } catch (error) {
+          console.warn('Service Worker registration failed:', error);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

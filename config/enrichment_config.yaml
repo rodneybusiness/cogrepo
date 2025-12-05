@@ -1,0 +1,92 @@
+# CogRepo Enrichment Configuration
+
+# API Configuration
+api:
+  provider: anthropic
+  model: claude-3-5-sonnet-20241022
+  # Set via environment variable: ANTHROPIC_API_KEY
+  # api_key_env: ANTHROPIC_API_KEY
+
+  # Model parameters
+  max_tokens: 1500
+  temperature: 0.3
+
+  # Cost optimization: Use Haiku for simpler tasks (5x cheaper)
+  use_haiku_for_simple_tasks: true
+  haiku_model: claude-3-5-haiku-20241022
+
+# Processing Configuration
+processing:
+  batch_size: 50              # Conversations per batch
+  max_retries: 3              # Retry attempts for failed enrichments
+  retry_delay_seconds: 2      # Initial delay between retries (exponential backoff)
+  rate_limit_rpm: 50          # Requests per minute (API rate limit)
+  save_every_n_batches: 5     # Save state after N batches
+
+  # Skip enrichment for very short conversations
+  min_conversation_length_chars: 100
+  min_message_count: 2
+
+# Enrichment Features
+enrichment:
+  generate_titles: true
+  generate_summaries: true
+  extract_tags: true
+  calculate_scores: true
+  extract_insights: true
+
+  # Title generation
+  title:
+    max_length: 100
+    use_haiku: true  # Titles are simple, use cheaper model
+
+  # Summary generation
+  summary:
+    abstractive_length: 280    # Target characters for AI summary
+    extractive_sentences: 3    # Number of key sentences
+    use_haiku: false           # Use full model for quality
+
+  # Tagging
+  tags:
+    max_tags: 10
+    min_tags: 3
+    use_haiku: true
+
+  # Scoring
+  scoring:
+    brilliance_scale: 10       # 1-10 scale
+    use_haiku: false           # Quality judgments need full model
+
+  # Insights
+  insights:
+    max_insights: 5
+    min_insights: 1
+    use_haiku: false
+
+# Output Configuration
+output:
+  enriched_repository: data/enriched_repository.jsonl
+  focus_list: data/focus_list.jsonl
+  focus_list_min_score: 7     # Minimum score for focus list
+  processing_state: data/processing_state.json
+
+  # Index files
+  repository_index: data/repository.index
+  repository_index_meta: data/repository.index.meta.json
+  standardized_parquet: data/standardized_conversations.parquet
+
+  # Backup before updates
+  create_backups: true
+  backup_dir: data/backups
+
+# Logging
+logging:
+  level: INFO                 # DEBUG, INFO, WARNING, ERROR
+  log_file: logs/cogrepo.log
+  console_output: true
+
+# Progress Display
+progress:
+  show_progress_bar: true
+  show_stats: true
+  update_frequency_seconds: 2

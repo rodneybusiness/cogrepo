@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COGREPO Explorer - Query Your Conversations</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .search-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-bar input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 50px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-bar button {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .search-bar button:hover {
+            transform: translateY(-2px);
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        .results-info {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .results-count {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .export-btn {
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .results-container {
+            display: grid;
+            gap: 20px;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .result-date {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .result-source {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .result-title {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .result-summary {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .tags {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: #f0f0f0;
+            color: #666;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .quick-filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .quick-filter {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quick-filter.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .stats-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 2% auto;
+            padding: 0;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 1000px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            padding: 30px 30px 20px 30px;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .modal-title {
+            font-size: 1.5em;
+            color: #333;
+            flex: 1;
+            margin-right: 20px;
+        }
+
+        .close-btn {
+            font-size: 28px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .modal-body {
+            padding: 20px 30px 30px 30px;
+            max-height: calc(90vh - 120px);
+            overflow-y: auto;
+        }
+
+        .modal-meta {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .modal-meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .modal-meta-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .modal-meta-value {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .modal-text {
+            line-height: 1.8;
+            color: #444;
+            font-size: 16px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* Clickable tags */
+        .tag.clickable {
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .tag.clickable:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Search highlighting */
+        .highlight {
+            background: #fff3cd;
+            padding: 1px 3px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        /* Tags cloud */
+        .tags-cloud {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .tags-cloud h3 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.3em;
+        }
+
+        .cloud-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .cloud-tag {
+            background: linear-gradient(135deg, #f0f0f0 0%, #e8e8e8 100%);
+            color: #666;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .cloud-tag:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .cloud-tag.popular {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .cloud-tag.very-popular {
+            font-size: 18px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* Search help and saved searches styling */
+        .search-help {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .search-help code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .save-search-btn {
+            padding: 15px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin-left: 10px;
+        }
+
+        .save-search-btn:hover {
+            transform: translateY(-2px);
+            background: #218838;
+        }
+
+        .semantic-search-btn {
+            padding: 15px 20px;
+            background: #6f42c1;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin-left: 10px;
+        }
+
+        .semantic-search-btn:hover {
+            transform: translateY(-2px);
+            background: #5a32a3;
+        }
+
+        .saved-searches {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .saved-searches h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .saved-search-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .saved-search-item:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+
+        .saved-search-query {
+            font-family: monospace;
+            font-size: 14px;
+            color: #495057;
+            flex: 1;
+        }
+
+        .saved-search-name {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 2px;
+        }
+
+        .saved-search-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .delete-saved-search {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .delete-saved-search:hover {
+            background: #c82333;
+        }
+
+        /* Real-time search indicator */
+        .search-indicator {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #667eea;
+            font-size: 12px;
+        }
+
+        .search-bar {
+            position: relative;
+        }
+
+        /* Relevance score styling */
+        .relevance-score {
+            background: #ffc107;
+            color: #212529;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-right: 8px;
+            display: inline-block;
+        }
+
+        /* Semantic score styling */
+        .semantic-score {
+            background: #6f42c1;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-right: 8px;
+            display: inline-block;
+        }
+
+        /* Export options styling */
+        .export-option {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .export-option:hover {
+            border-color: #007bff;
+            background: #f8f9ff;
+        }
+
+        .export-option.selected {
+            border-color: #007bff;
+            background: #e7f3ff;
+        }
+
+        .export-option-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .export-option-header input[type="radio"] {
+            pointer-events: none;
+        }
+
+        .export-option-description {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .export-option-size {
+            color: #007bff;
+            font-size: 12px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧠 COGREPO Explorer</h1>
+            <p>Query and explore your conversation repository</p>
+        </header>
+
+        <div class="search-panel">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder='Try: "exact phrase" +required -excluded terms...'>
+                <button onclick="performSearch()">Search</button>
+                <button class="semantic-search-btn" onclick="performSemanticSearch()" title="Semantic search finds related concepts">🧠</button>
+                <button class="save-search-btn" onclick="showSaveSearchDialog()" title="Save this search">💾</button>
+            </div>
+
+            <div class="search-help" id="searchHelp">
+                <strong>Search Tips:</strong> 
+                Use <code>"exact phrase"</code> for phrases, <code>+required</code> for must-have terms, <code>-excluded</code> to exclude words. 
+                Try the <strong>🧠 Semantic</strong> button to find related concepts!
+            </div>
+
+            <div class="saved-searches" id="savedSearches" style="display:none;">
+                <h4>📌 Saved Searches</h4>
+                <div class="saved-searches-list" id="savedSearchesList">
+                    <!-- Saved searches will be displayed here -->
+                </div>
+            </div>
+
+            <div class="quick-filters">
+                <button class="quick-filter" onclick="quickSearch('family travel')">Family Travel</button>
+                <button class="quick-filter" onclick="quickSearch('business')">Business</button>
+                <button class="quick-filter" onclick="quickSearch('creative')">Creative</button>
+                <button class="quick-filter" onclick="quickSearch('technical')">Technical</button>
+                <button class="quick-filter" onclick="quickSearch('personal')">Personal</button>
+            </div>
+
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Source</label>
+                    <select id="sourceFilter">
+                        <option value="">All Sources</option>
+                        <option value="OpenAI">OpenAI</option>
+                        <option value="Anthropic">Anthropic</option>
+                        <option value="Google">Google</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>From Date</label>
+                    <input type="date" id="dateFrom">
+                </div>
+                
+                <div class="filter-group">
+                    <label>To Date</label>
+                    <input type="date" id="dateTo">
+                </div>
+
+                <div class="filter-group">
+                    <label>Sort By</label>
+                    <select id="sortBy">
+                        <option value="date-desc">Newest First</option>
+                        <option value="date-asc">Oldest First</option>
+                        <option value="relevance">Relevance</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="tags-cloud" id="tagsCloud" style="display:none;">
+            <h3>🏷️ Popular Topics</h3>
+            <div class="cloud-tags" id="cloudTags">
+                <!-- Popular tags will be displayed here -->
+            </div>
+        </div>
+
+        <div class="stats-panel" id="statsPanel" style="display:none;">
+            <div class="stat">
+                <div class="stat-value" id="totalResults">0</div>
+                <div class="stat-label">Results</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="dateRange">-</div>
+                <div class="stat-label">Date Range</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="topSource">-</div>
+                <div class="stat-label">Top Source</div>
+            </div>
+        </div>
+
+        <div class="results-info" id="resultsInfo" style="display:none;">
+            <span class="results-count" id="resultsCount">0 conversations found</span>
+            <button class="export-btn" onclick="showExportOptions()">Export Results</button>
+        </div>
+
+        <div class="results-container" id="resultsContainer">
+            <!-- Results will be displayed here -->
+        </div>
+
+        <div class="loading" id="loading" style="display:none;">
+            Searching your conversations...
+        </div>
+    </div>
+
+    <!-- Conversation Modal -->
+    <div id="conversationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">Loading...</div>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-meta" id="modalMeta">
+                    <!-- Metadata will be displayed here -->
+                </div>
+                <div class="modal-text" id="modalText">
+                    Loading conversation...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Search Modal -->
+    <div id="saveSearchModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <div class="modal-title">💾 Save Search</div>
+                <button class="close-btn" onclick="closeSaveSearchModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Search Name:</label>
+                    <input type="text" id="saveSearchName" placeholder="e.g., My Important Conversations" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Query:</label>
+                    <input type="text" id="saveSearchQuery" readonly style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; background: #f8f9fa; font-family: monospace;">
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button onclick="closeSaveSearchModal()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer;">Cancel</button>
+                    <button onclick="saveCurrentSearch()" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer;">Save Search</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Options Modal -->
+    <div id="exportOptionsModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <div class="modal-title">📥 Export Options</div>
+                <button class="close-btn" onclick="closeExportOptionsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 25px;">
+                    <h4 style="margin-bottom: 15px; color: #333;">Choose Export Type:</h4>
+                    
+                    <div class="export-option" onclick="selectExportOption('summary')" id="summaryOption">
+                        <div class="export-option-header">
+                            <input type="radio" name="exportType" value="summary" id="summaryRadio" checked>
+                            <label for="summaryRadio" style="font-weight: 500; margin-left: 8px;">📊 Summary Export (Default)</label>
+                        </div>
+                        <div class="export-option-description">
+                            Export conversation metadata including titles, summaries, dates, sources, tags, and relevance scores. 
+                            <strong>Smaller file size</strong> - perfect for analysis and overview.
+                        </div>
+                        <div class="export-option-size" id="summarySizeEstimate">
+                            Estimated size: ~<span id="summarySize">0</span> KB
+                        </div>
+                    </div>
+
+                    <div class="export-option" onclick="selectExportOption('full')" id="fullOption">
+                        <div class="export-option-header">
+                            <input type="radio" name="exportType" value="full" id="fullRadio">
+                            <label for="fullRadio" style="font-weight: 500; margin-left: 8px;">💬 Full Conversation Export</label>
+                        </div>
+                        <div class="export-option-description">
+                            Export complete conversation text including all messages, metadata, and full content. 
+                            <strong>Larger file size</strong> - includes everything for detailed analysis.
+                        </div>
+                        <div class="export-option-size" id="fullSizeEstimate">
+                            Estimated size: ~<span id="fullSize">0</span> KB
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="font-weight: 500; margin-bottom: 8px;">Export Preview:</div>
+                    <div style="font-family: monospace; font-size: 14px; color: #666;" id="exportFilenamePreview">
+                        cogrepo_search_2025-08-23_15results_20250823T170930.json
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button onclick="closeExportOptionsModal()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer;">Cancel</button>
+                    <button onclick="performExport()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer;">📥 Export</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API configuration
+        const API_BASE = 'http://localhost:8000';
+        let conversations = [];
+        let currentResults = [];
+        let currentSearchTerm = '';
+        let allTags = new Map(); // Track tag frequency across all conversations
+        let searchTimeout = null; // For debouncing real-time search
+        let savedSearches = []; // Saved searches array
+
+        // Load conversations from API
+        async function loadConversations() {
+            try {
+                console.log('Loading conversations from API...');
+                const response = await fetch(`${API_BASE}/api/conversations`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                conversations = await response.json();
+                console.log(`Loaded ${conversations.length} conversations from API`);
+                
+                // Build tags frequency map
+                buildTagsCloud();
+                
+                // Load saved searches
+                loadSavedSearches();
+                
+            } catch (error) {
+                console.error('Error loading conversations:', error);
+                console.error('Make sure the Python server is running on port 8000');
+                // Show user-friendly error
+                document.getElementById('resultsContainer').innerHTML = 
+                    '<div class="loading" style="color: #ff4444;">⚠️ Unable to connect to server. Make sure the Python server is running.</div>';
+            }
+        }
+
+        // Build popular tags cloud from all conversations
+        function buildTagsCloud() {
+            allTags.clear();
+            conversations.forEach(convo => {
+                if (convo.tags && Array.isArray(convo.tags)) {
+                    convo.tags.forEach(tag => {
+                        if (tag && tag.trim()) {
+                            const cleanTag = tag.trim().toLowerCase();
+                            allTags.set(cleanTag, (allTags.get(cleanTag) || 0) + 1);
+                        }
+                    });
+                }
+            });
+            
+            displayTagsCloud();
+        }
+
+        // Display the popular tags cloud
+        function displayTagsCloud() {
+            const cloudContainer = document.getElementById('cloudTags');
+            const tagsCloudPanel = document.getElementById('tagsCloud');
+            
+            if (allTags.size === 0) {
+                tagsCloudPanel.style.display = 'none';
+                return;
+            }
+            
+            // Get top 20 most popular tags
+            const sortedTags = [...allTags.entries()]
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 20);
+            
+            cloudContainer.innerHTML = sortedTags.map(([tag, count]) => {
+                let className = 'cloud-tag';
+                if (count >= 10) className += ' very-popular';
+                else if (count >= 5) className += ' popular';
+                
+                return `<span class="${className}" onclick="searchByTag('${tag}')" title="${count} conversations">${tag}</span>`;
+            }).join('');
+            
+            tagsCloudPanel.style.display = 'block';
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('searchInput').value;
+            const source = document.getElementById('sourceFilter').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            const sortBy = document.getElementById('sortBy').value;
+
+            // Store search term for highlighting
+            currentSearchTerm = query.trim();
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultsContainer').innerHTML = '';
+
+            try {
+                // Build query parameters
+                const params = new URLSearchParams();
+                if (query) params.append('q', query);
+                if (source) params.append('source', source);
+                if (dateFrom) params.append('from', dateFrom);
+                if (dateTo) params.append('to', dateTo);
+
+                // Make API call
+                const response = await fetch(`${API_BASE}/api/search?${params.toString()}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                let results = await response.json();
+                
+                // Apply client-side sorting if needed (server returns newest first by default)
+                if (sortBy === 'date-asc') {
+                    results.sort((a, b) => a.date.localeCompare(b.date));
+                }
+
+                currentResults = results;
+                displayResults(results);
+                updateStats(results);
+
+            } catch (error) {
+                console.error('Error searching conversations:', error);
+                document.getElementById('resultsContainer').innerHTML = 
+                    '<div class="loading" style="color: #ff4444;">⚠️ Search failed. Make sure the Python server is running.</div>';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function displayResults(results) {
+            const container = document.getElementById('resultsContainer');
+            const resultsInfo = document.getElementById('resultsInfo');
+            const resultsCount = document.getElementById('resultsCount');
+
+            if (results.length === 0) {
+                container.innerHTML = '<div class="loading">No conversations found matching your criteria.</div>';
+                resultsInfo.style.display = 'none';
+                return;
+            }
+
+            resultsInfo.style.display = 'flex';
+            resultsCount.textContent = `${results.length} conversation${results.length !== 1 ? 's' : ''} found`;
+
+            container.innerHTML = results.map(convo => `
+                <div class="result-card" onclick="viewConversation('${convo.id}')">
+                    <div class="result-header">
+                        <span class="result-date">${formatDate(convo.date)}</span>
+                        <span class="result-source">${convo.source}</span>
+                    </div>
+                    <h3 class="result-title">${highlightSearchTerms(convo.title)}</h3>
+                    <p class="result-summary">${highlightSearchTerms(convo.summary)}</p>
+                    <div class="tags">
+                        ${convo.tags.map(tag => `<span class="tag clickable" onclick="event.stopPropagation(); searchByTag('${tag.toLowerCase()}')" title="Click to search for '${tag}'">${tag}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Highlight search terms in text
+        function highlightSearchTerms(text) {
+            if (!currentSearchTerm || !text) return text;
+            
+            const terms = currentSearchTerm.toLowerCase().split(' ').filter(term => term.length > 2);
+            let highlightedText = text;
+            
+            terms.forEach(term => {
+                const regex = new RegExp(`(${term})`, 'gi');
+                highlightedText = highlightedText.replace(regex, '<span class="highlight">$1</span>');
+            });
+            
+            return highlightedText;
+        }
+
+        // Search by clicking a tag
+        function searchByTag(tag) {
+            document.getElementById('searchInput').value = tag;
+            performSearch();
+        }
+
+        function updateStats(results) {
+            if (results.length === 0) {
+                document.getElementById('statsPanel').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('statsPanel').style.display = 'grid';
+            document.getElementById('totalResults').textContent = results.length;
+
+            // Calculate date range
+            const dates = results.map(r => r.date).sort();
+            const dateRange = dates.length > 0 ? 
+                `${formatDate(dates[0])} - ${formatDate(dates[dates.length - 1])}` : '-';
+            document.getElementById('dateRange').textContent = dateRange;
+
+            // Find top source
+            const sources = {};
+            results.forEach(r => {
+                sources[r.source] = (sources[r.source] || 0) + 1;
+            });
+            const topSource = Object.keys(sources).sort((a, b) => sources[b] - sources[a])[0] || '-';
+            document.getElementById('topSource').textContent = topSource;
+        }
+
+        function quickSearch(query) {
+            document.getElementById('searchInput').value = query;
+            performSearch();
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        // View full conversation in modal
+        async function viewConversation(id) {
+            const modal = document.getElementById('conversationModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMeta = document.getElementById('modalMeta');
+            const modalText = document.getElementById('modalText');
+            
+            // Show modal immediately with loading state
+            modal.style.display = 'block';
+            modalTitle.textContent = 'Loading...';
+            modalMeta.innerHTML = '';
+            modalText.textContent = 'Loading conversation...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/conversation/${id}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const conversation = await response.json();
+                
+                if (conversation.error) {
+                    throw new Error(conversation.error);
+                }
+                
+                // Populate modal with conversation data
+                modalTitle.innerHTML = highlightSearchTerms(conversation.title);
+                
+                modalMeta.innerHTML = `
+                    <div class="modal-meta-item">
+                        <div class="modal-meta-label">Date</div>
+                        <div class="modal-meta-value">${formatDate(conversation.date)}</div>
+                    </div>
+                    <div class="modal-meta-item">
+                        <div class="modal-meta-label">Source</div>
+                        <div class="modal-meta-value">${conversation.source}</div>
+                    </div>
+                    <div class="modal-meta-item">
+                        <div class="modal-meta-label">Tags</div>
+                        <div class="modal-meta-value">
+                            ${conversation.tags && conversation.tags.length > 0 
+                                ? conversation.tags.map(tag => `<span class="tag clickable" onclick="searchByTag('${tag.toLowerCase()}')" title="Click to search for '${tag}'">${tag}</span>`).join(' ')
+                                : 'No tags'
+                            }
+                        </div>
+                    </div>
+                    ${conversation.key_topics && conversation.key_topics.length > 0 ? `
+                    <div class="modal-meta-item">
+                        <div class="modal-meta-label">Key Topics</div>
+                        <div class="modal-meta-value">${conversation.key_topics.join(', ')}</div>
+                    </div>
+                    ` : ''}
+                `;
+                
+                // Show full conversation text with highlighting
+                const fullText = conversation.full_text || 'No conversation text available.';
+                modalText.innerHTML = highlightSearchTerms(fullText);
+                
+            } catch (error) {
+                console.error('Error loading conversation:', error);
+                modalTitle.textContent = 'Error Loading Conversation';
+                modalMeta.innerHTML = '';
+                modalText.innerHTML = `<div style="color: #ff4444; text-align: center; padding: 40px;">
+                    ⚠️ Failed to load conversation details.<br>
+                    <small>${error.message}</small>
+                </div>`;
+            }
+        }
+        
+        // Close modal
+        function closeModal() {
+            document.getElementById('conversationModal').style.display = 'none';
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('conversationModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Show export options modal
+        function showExportOptions() {
+            if (currentResults.length === 0) {
+                alert('No results to export. Please perform a search first.');
+                return;
+            }
+            
+            // Update size estimates
+            updateSizeEstimates();
+            
+            // Update filename preview
+            updateFilenamePreview('summary');
+            
+            // Show modal
+            document.getElementById('exportOptionsModal').style.display = 'block';
+        }
+        
+        function closeExportOptionsModal() {
+            document.getElementById('exportOptionsModal').style.display = 'none';
+        }
+        
+        function selectExportOption(type) {
+            // Update radio buttons
+            document.getElementById('summaryRadio').checked = type === 'summary';
+            document.getElementById('fullRadio').checked = type === 'full';
+            
+            // Update visual selection
+            document.getElementById('summaryOption').classList.toggle('selected', type === 'summary');
+            document.getElementById('fullOption').classList.toggle('selected', type === 'full');
+            
+            // Update filename preview
+            updateFilenamePreview(type);
+        }
+        
+        function updateSizeEstimates() {
+            // Estimate summary export size (current data)
+            const summarySize = Math.round(JSON.stringify(currentResults).length / 1024);
+            document.getElementById('summarySize').textContent = summarySize;
+            
+            // Estimate full export size (roughly 5-10x larger due to full text)
+            const fullSize = Math.round(summarySize * 7); // Estimate 7x larger
+            document.getElementById('fullSize').textContent = fullSize;
+        }
+        
+        function updateFilenamePreview(exportType) {
+            const filename = generateExportFilename(exportType);
+            document.getElementById('exportFilenamePreview').textContent = filename;
+        }
+        
+        async function performExport() {
+            const exportType = document.querySelector('input[name="exportType"]:checked').value;
+            
+            try {
+                let exportData;
+                
+                if (exportType === 'full') {
+                    // Fetch full conversation details for all results
+                    exportData = await fetchFullConversationsForExport();
+                } else {
+                    // Use current summary data
+                    exportData = currentResults;
+                }
+                
+                // Generate export
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                
+                // Generate filename
+                const exportFileDefaultName = generateExportFilename(exportType);
+                
+                // Download file
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+                
+                // Close modal
+                closeExportOptionsModal();
+                
+            } catch (error) {
+                console.error('Export failed:', error);
+                alert('Export failed. Please try again.');
+            }
+        }
+        
+        async function fetchFullConversationsForExport() {
+            const fullConversations = [];
+            
+            // Show progress for large exports
+            if (currentResults.length > 10) {
+                document.querySelector('#exportOptionsModal .modal-body').innerHTML += 
+                    '<div id="exportProgress" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px; text-align: center;">Loading full conversations... <span id="exportProgressCount">0</span> / ' + currentResults.length + '</div>';
+            }
+            
+            for (let i = 0; i < currentResults.length; i++) {
+                const result = currentResults[i];
+                
+                try {
+                    // Fetch full conversation details
+                    const response = await fetch(`${API_BASE}/api/conversation/${result.id}`);
+                    if (response.ok) {
+                        const fullConvo = await response.json();
+                        
+                        // Combine summary data with full conversation text
+                        const exportConvo = {
+                            ...result, // Include summary, title, tags, scores, etc.
+                            full_conversation: {
+                                full_text: fullConvo.full_text,
+                                timestamp: fullConvo.timestamp,
+                                summary_extractive: fullConvo.summary_extractive,
+                                key_topics: fullConvo.key_topics
+                            }
+                        };
+                        
+                        fullConversations.push(exportConvo);
+                    } else {
+                        // If fetch fails, include summary data only
+                        fullConversations.push({
+                            ...result,
+                            full_conversation: {
+                                error: 'Failed to fetch full conversation text'
+                            }
+                        });
+                    }
+                } catch (error) {
+                    // Include error info
+                    fullConversations.push({
+                        ...result,
+                        full_conversation: {
+                            error: `Failed to fetch: ${error.message}`
+                        }
+                    });
+                }
+                
+                // Update progress
+                const progressElement = document.getElementById('exportProgressCount');
+                if (progressElement) {
+                    progressElement.textContent = i + 1;
+                }
+            }
+            
+            return fullConversations;
+        }
+
+        function exportResults() {
+            // Legacy function - redirect to new modal
+            showExportOptions();
+        }
+
+        function generateExportFilename(exportType = 'summary') {
+            const now = new Date();
+            const timestamp = now.toISOString().slice(0, 19).replace(/[:-]/g, ''); // YYYYMMDDTHHMMSS
+            const date = now.toISOString().split('T')[0]; // YYYY-MM-DD
+            
+            // Get current search parameters
+            const query = document.getElementById('searchInput').value.trim();
+            const source = document.getElementById('sourceFilter').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            const resultsCount = currentResults.length;
+            
+            // Determine search type
+            let searchType = 'search';
+            if (currentResults.length > 0 && currentResults[0].semantic_score !== undefined) {
+                searchType = 'semantic';
+            } else if (currentResults.length > 0 && currentResults[0].relevance_score !== undefined) {
+                searchType = 'advanced';
+            }
+            
+            // Add export type suffix
+            const exportTypeSuffix = exportType === 'full' ? '-fulltext' : '';
+            
+            // Clean and format query for filename
+            let queryPart = '';
+            if (query) {
+                queryPart = query
+                    .toLowerCase()
+                    .replace(/[^\w\s-]/g, '') // Remove special chars except spaces and hyphens
+                    .replace(/\s+/g, '-')     // Replace spaces with hyphens
+                    .substring(0, 30);       // Limit length
+                if (queryPart) queryPart = `_${queryPart}`;
+            }
+            
+            // Add source filter if specified
+            let sourcePart = '';
+            if (source) {
+                sourcePart = `_${source.toLowerCase()}`;
+            }
+            
+            // Add date range if specified
+            let datePart = '';
+            if (dateFrom || dateTo) {
+                if (dateFrom && dateTo) {
+                    datePart = `_${dateFrom}-to-${dateTo}`;
+                } else if (dateFrom) {
+                    datePart = `_from-${dateFrom}`;
+                } else if (dateTo) {
+                    datePart = `_until-${dateTo}`;
+                }
+            }
+            
+            // Construct filename: cogrepo_[searchtype]_[YYYY-MM-DD]_[count]results[_query][_source][_daterange][-fulltext]_[timestamp].json
+            const filename = [
+                'cogrepo',
+                searchType,
+                date,
+                `${resultsCount}results`
+            ].join('_') + queryPart + sourcePart + datePart + exportTypeSuffix + `_${timestamp}.json`;
+            
+            return filename;
+        }
+
+        // Real-time search with debouncing
+        function setupRealTimeSearch() {
+            const searchInput = document.getElementById('searchInput');
+            
+            searchInput.addEventListener('input', function() {
+                // Clear existing timeout
+                if (searchTimeout) {
+                    clearTimeout(searchTimeout);
+                }
+                
+                // Show typing indicator
+                showSearchIndicator('typing...');
+                
+                // Set new timeout for 500ms delay
+                searchTimeout = setTimeout(() => {
+                    const query = searchInput.value.trim();
+                    if (query.length > 2 || query.length === 0) {
+                        showSearchIndicator('searching...');
+                        performSearch();
+                    } else {
+                        hideSearchIndicator();
+                    }
+                }, 500);
+            });
+        }
+        
+        function showSearchIndicator(text) {
+            let indicator = document.querySelector('.search-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.className = 'search-indicator';
+                document.querySelector('.search-bar').appendChild(indicator);
+            }
+            indicator.textContent = text;
+            indicator.style.display = 'block';
+        }
+        
+        function hideSearchIndicator() {
+            const indicator = document.querySelector('.search-indicator');
+            if (indicator) {
+                indicator.style.display = 'none';
+            }
+        }
+
+        // Saved Searches functionality
+        function loadSavedSearches() {
+            const saved = localStorage.getItem('cogrepo-saved-searches');
+            if (saved) {
+                savedSearches = JSON.parse(saved);
+                displaySavedSearches();
+            }
+        }
+        
+        function displaySavedSearches() {
+            const container = document.getElementById('savedSearchesList');
+            const panel = document.getElementById('savedSearches');
+            
+            if (savedSearches.length === 0) {
+                panel.style.display = 'none';
+                return;
+            }
+            
+            panel.style.display = 'block';
+            container.innerHTML = savedSearches.map((search, index) => `
+                <div class="saved-search-item" onclick="loadSavedSearch(${index})">
+                    <div>
+                        <div class="saved-search-name">${search.name}</div>
+                        <div class="saved-search-query">${search.query}</div>
+                    </div>
+                    <div class="saved-search-actions">
+                        <button class="delete-saved-search" onclick="event.stopPropagation(); deleteSavedSearch(${index})" title="Delete search">×</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function showSaveSearchDialog() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                alert('Please enter a search query first');
+                return;
+            }
+            
+            document.getElementById('saveSearchQuery').value = query;
+            document.getElementById('saveSearchName').value = '';
+            document.getElementById('saveSearchModal').style.display = 'block';
+            document.getElementById('saveSearchName').focus();
+        }
+        
+        function closeSaveSearchModal() {
+            document.getElementById('saveSearchModal').style.display = 'none';
+        }
+        
+        function saveCurrentSearch() {
+            const name = document.getElementById('saveSearchName').value.trim();
+            const query = document.getElementById('saveSearchQuery').value.trim();
+            
+            if (!name) {
+                alert('Please enter a name for this search');
+                return;
+            }
+            
+            // Check if name already exists
+            if (savedSearches.some(s => s.name === name)) {
+                if (!confirm('A search with this name already exists. Replace it?')) {
+                    return;
+                }
+                // Remove existing search with same name
+                savedSearches = savedSearches.filter(s => s.name !== name);
+            }
+            
+            savedSearches.push({
+                name: name,
+                query: query,
+                createdAt: new Date().toISOString()
+            });
+            
+            // Save to localStorage
+            localStorage.setItem('cogrepo-saved-searches', JSON.stringify(savedSearches));
+            
+            // Update display
+            displaySavedSearches();
+            closeSaveSearchModal();
+            
+            alert(`Search "${name}" saved successfully!`);
+        }
+        
+        function loadSavedSearch(index) {
+            const search = savedSearches[index];
+            if (search) {
+                document.getElementById('searchInput').value = search.query;
+                performSearch();
+            }
+        }
+        
+        function deleteSavedSearch(index) {
+            if (confirm('Delete this saved search?')) {
+                savedSearches.splice(index, 1);
+                localStorage.setItem('cogrepo-saved-searches', JSON.stringify(savedSearches));
+                displaySavedSearches();
+            }
+        }
+
+        // Enhanced search function with better UX
+        async function performSearch() {
+            const query = document.getElementById('searchInput').value;
+            const source = document.getElementById('sourceFilter').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            const sortBy = document.getElementById('sortBy').value;
+
+            // Store search term for highlighting
+            currentSearchTerm = query.trim();
+
+            // Show loading only for manual searches (not real-time)
+            if (!searchTimeout) {
+                document.getElementById('loading').style.display = 'block';
+            }
+            document.getElementById('resultsContainer').innerHTML = '';
+
+            try {
+                // Build query parameters
+                const params = new URLSearchParams();
+                if (query) params.append('q', query);
+                if (source) params.append('source', source);
+                if (dateFrom) params.append('from', dateFrom);
+                if (dateTo) params.append('to', dateTo);
+
+                // Make API call
+                const response = await fetch(`${API_BASE}/api/search?${params.toString()}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                let results = await response.json();
+                
+                // Apply client-side sorting if needed (server returns newest first by default)
+                if (sortBy === 'date-asc') {
+                    results.sort((a, b) => a.date.localeCompare(b.date));
+                } else if (sortBy === 'relevance' && results.length > 0 && results[0].relevance_score !== undefined) {
+                    // Results are already sorted by relevance from server
+                }
+
+                currentResults = results;
+                displayResults(results);
+                updateStats(results);
+                hideSearchIndicator();
+
+            } catch (error) {
+                console.error('Error searching conversations:', error);
+                document.getElementById('resultsContainer').innerHTML = 
+                    '<div class="loading" style="color: #ff4444;">⚠️ Search failed. Make sure the Python server is running.</div>';
+                hideSearchIndicator();
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Semantic search function
+        async function performSemanticSearch() {
+            const query = document.getElementById('searchInput').value;
+            const source = document.getElementById('sourceFilter').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+
+            if (!query.trim()) {
+                alert('Please enter a search query for semantic search');
+                return;
+            }
+
+            // Store search term for highlighting
+            currentSearchTerm = query.trim();
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultsContainer').innerHTML = '';
+
+            try {
+                // Build query parameters
+                const params = new URLSearchParams();
+                if (query) params.append('q', query);
+                if (source) params.append('source', source);
+                if (dateFrom) params.append('from', dateFrom);
+                if (dateTo) params.append('to', dateTo);
+
+                // Make semantic search API call
+                const response = await fetch(`${API_BASE}/api/semantic-search?${params.toString()}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                let results = await response.json();
+
+                currentResults = results;
+                displaySemanticResults(results);
+                updateStats(results);
+
+            } catch (error) {
+                console.error('Error performing semantic search:', error);
+                document.getElementById('resultsContainer').innerHTML = 
+                    '<div class="loading" style="color: #ff4444;">⚠️ Semantic search failed. Make sure the Python server is running.</div>';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Display semantic search results
+        function displaySemanticResults(results) {
+            const container = document.getElementById('resultsContainer');
+            const resultsInfo = document.getElementById('resultsInfo');
+            const resultsCount = document.getElementById('resultsCount');
+
+            if (results.length === 0) {
+                container.innerHTML = '<div class="loading">No semantically related conversations found.</div>';
+                resultsInfo.style.display = 'none';
+                return;
+            }
+
+            resultsInfo.style.display = 'flex';
+            resultsCount.textContent = `${results.length} semantically related conversation${results.length !== 1 ? 's' : ''} found`;
+
+            container.innerHTML = results.map(convo => `
+                <div class="result-card" onclick="viewConversation('${convo.id}')">
+                    <div class="result-header">
+                        <span class="result-date">${formatDate(convo.date)}</span>
+                        <div>
+                            ${convo.semantic_score ? `<span class="semantic-score" title="Semantic Similarity Score">🧠 ${Math.round(convo.semantic_score)}</span>` : ''}
+                            <span class="result-source">${convo.source}</span>
+                        </div>
+                    </div>
+                    <h3 class="result-title">${highlightSearchTerms(convo.title)}</h3>
+                    <p class="result-summary">${highlightSearchTerms(convo.summary)}</p>
+                    <div class="tags">
+                        ${convo.tags.map(tag => `<span class="tag clickable" onclick="event.stopPropagation(); searchByTag('${tag.toLowerCase()}')" title="Click to search for '${tag}'">${tag}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Enhanced display results with relevance scores
+        function displayResults(results) {
+            const container = document.getElementById('resultsContainer');
+            const resultsInfo = document.getElementById('resultsInfo');
+            const resultsCount = document.getElementById('resultsCount');
+
+            if (results.length === 0) {
+                container.innerHTML = '<div class="loading">No conversations found matching your criteria.</div>';
+                resultsInfo.style.display = 'none';
+                return;
+            }
+
+            resultsInfo.style.display = 'flex';
+            resultsCount.textContent = `${results.length} conversation${results.length !== 1 ? 's' : ''} found`;
+
+            container.innerHTML = results.map(convo => `
+                <div class="result-card" onclick="viewConversation('${convo.id}')">
+                    <div class="result-header">
+                        <span class="result-date">${formatDate(convo.date)}</span>
+                        <div>
+                            ${convo.relevance_score ? `<span class="relevance-score" title="Relevance Score">📊 ${Math.round(convo.relevance_score)}</span>` : ''}
+                            <span class="result-source">${convo.source}</span>
+                        </div>
+                    </div>
+                    <h3 class="result-title">${highlightSearchTerms(convo.title)}</h3>
+                    <p class="result-summary">${highlightSearchTerms(convo.summary)}</p>
+                    <div class="tags">
+                        ${convo.tags.map(tag => `<span class="tag clickable" onclick="event.stopPropagation(); searchByTag('${tag.toLowerCase()}')" title="Click to search for '${tag}'">${tag}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            loadConversations();
+            setupRealTimeSearch();
+            
+            // Add enter key support for search
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+
+            // Close modals when clicking outside
+            window.onclick = function(event) {
+                const conversationModal = document.getElementById('conversationModal');
+                const saveSearchModal = document.getElementById('saveSearchModal');
+                const exportOptionsModal = document.getElementById('exportOptionsModal');
+                
+                if (event.target === conversationModal) {
+                    closeModal();
+                }
+                if (event.target === saveSearchModal) {
+                    closeSaveSearchModal();
+                }
+                if (event.target === exportOptionsModal) {
+                    closeExportOptionsModal();
+                }
+            }
+        };
+    </script>
+</body>
+</html>
