@@ -1,0 +1,155 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradient for brain -->
+    <linearGradient id="brainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f093fb;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Gradient for drawer -->
+    <linearGradient id="drawerGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Sparkle animation -->
+    <animateTransform
+      id="sparkleRotate"
+      attributeName="transform"
+      type="rotate"
+      from="0 100 100"
+      to="360 100 100"
+      dur="3s"
+      repeatCount="indefinite"
+    />
+
+    <!-- Pulse animation for brain -->
+    <animate
+      id="brainPulse"
+      attributeName="opacity"
+      values="1;0.8;1"
+      dur="2s"
+      repeatCount="indefinite"
+    />
+  </defs>
+
+  <!-- Main brain shape (witty twist: it's actually a filing cabinet!) -->
+  <g id="brain-cabinet">
+    <!-- Brain outline with cabinet structure -->
+    <path d="M 60 60 Q 50 40, 70 30 Q 90 25, 100 30 Q 110 25, 130 30 Q 150 40, 140 60
+             L 140 140 Q 140 155, 125 160 L 75 160 Q 60 155, 60 140 Z"
+          fill="url(#brainGradient)"
+          stroke="#5a67d8"
+          stroke-width="3"
+          opacity="0.95">
+      <animate attributeName="opacity" values="1;0.85;1" dur="2s" repeatCount="indefinite" />
+    </path>
+
+    <!-- Brain wrinkles (witty: they're actually drawer handles!) -->
+    <g id="drawer-handles">
+      <!-- Top drawer handle -->
+      <rect x="70" y="50" width="60" height="8" rx="4" fill="url(#drawerGradient)" opacity="0.9">
+        <animate attributeName="y" values="50;48;50" dur="1.5s" repeatCount="indefinite" />
+      </rect>
+      <circle cx="85" cy="54" r="3" fill="#fff" opacity="0.6" />
+      <circle cx="115" cy="54" r="3" fill="#fff" opacity="0.6" />
+
+      <!-- Middle drawer handle -->
+      <rect x="70" y="85" width="60" height="8" rx="4" fill="url(#drawerGradient)" opacity="0.9">
+        <animate attributeName="y" values="85;83;85" dur="1.5s" begin="0.3s" repeatCount="indefinite" />
+      </rect>
+      <circle cx="85" cy="89" r="3" fill="#fff" opacity="0.6" />
+      <circle cx="115" cy="89" r="3" fill="#fff" opacity="0.6" />
+
+      <!-- Bottom drawer handle (OPEN! - the witty part) -->
+      <rect x="70" y="120" width="60" height="8" rx="4" fill="url(#drawerGradient)" opacity="0.9">
+        <animate attributeName="y" values="120;125;120" dur="1.5s" begin="0.6s" repeatCount="indefinite" />
+      </rect>
+      <circle cx="85" cy="124" r="3" fill="#fff" opacity="0.6" />
+      <circle cx="115" cy="124" r="3" fill="#fff" opacity="0.6" />
+
+      <!-- Open drawer showing "thoughts" (papers) -->
+      <g id="open-drawer-contents" opacity="0.8">
+        <rect x="75" y="128" width="8" height="15" fill="#fff" stroke="#667eea" stroke-width="0.5" rx="1">
+          <animate attributeName="height" values="15;18;15" dur="2s" repeatCount="indefinite" />
+        </rect>
+        <rect x="88" y="128" width="8" height="12" fill="#fff" stroke="#764ba2" stroke-width="0.5" rx="1">
+          <animate attributeName="height" values="12;16;12" dur="2s" begin="0.3s" repeatCount="indefinite" />
+        </rect>
+        <rect x="101" y="128" width="8" height="18" fill="#fff" stroke="#f093fb" stroke-width="0.5" rx="1">
+          <animate attributeName="height" values="18;20;18" dur="2s" begin="0.6s" repeatCount="indefinite" />
+        </rect>
+        <rect x="114" y="128" width="8" height="10" fill="#fff" stroke="#10b981" stroke-width="0.5" rx="1">
+          <animate attributeName="height" values="10;14;10" dur="2s" begin="0.9s" repeatCount="indefinite" />
+        </rect>
+      </g>
+    </g>
+
+    <!-- Synapses/connections (magical sparkles coming from brain) -->
+    <g id="magical-sparkles">
+      <!-- Top left sparkle -->
+      <path d="M 45 45 L 47 47 L 45 49 L 43 47 Z" fill="#fbbf24" opacity="0.8">
+        <animate attributeName="opacity" values="0.3;1;0.3" dur="1s" repeatCount="indefinite" />
+        <animateTransform attributeName="transform" type="scale" values="0.5;1.2;0.5" dur="1s"
+                          additive="sum" repeatCount="indefinite" />
+      </path>
+
+      <!-- Top right sparkle -->
+      <path d="M 155 45 L 157 47 L 155 49 L 153 47 Z" fill="#f093fb" opacity="0.8">
+        <animate attributeName="opacity" values="0.3;1;0.3" dur="1.2s" begin="0.3s" repeatCount="indefinite" />
+        <animateTransform attributeName="transform" type="scale" values="0.5;1.2;0.5" dur="1.2s"
+                          additive="sum" repeatCount="indefinite" />
+      </path>
+
+      <!-- Middle left sparkle -->
+      <path d="M 40 90 L 43 93 L 40 96 L 37 93 Z" fill="#10b981" opacity="0.8">
+        <animate attributeName="opacity" values="0.3;1;0.3" dur="1.1s" begin="0.6s" repeatCount="indefinite" />
+        <animateTransform attributeName="transform" type="scale" values="0.5;1.2;0.5" dur="1.1s"
+                          additive="sum" repeatCount="indefinite" />
+      </path>
+
+      <!-- Middle right sparkle -->
+      <path d="M 160 90 L 163 93 L 160 96 L 157 93 Z" fill="#667eea" opacity="0.8">
+        <animate attributeName="opacity" values="0.3;1;0.3" dur="1.3s" begin="0.4s" repeatCount="indefinite" />
+        <animateTransform attributeName="transform" type="scale" values="0.5;1.2;0.5" dur="1.3s"
+                          additive="sum" repeatCount="indefinite" />
+      </path>
+
+      <!-- Bottom sparkle (floating above open drawer) -->
+      <path d="M 100 150 L 103 153 L 100 156 L 97 153 Z" fill="#f093fb" opacity="0.9">
+        <animate attributeName="opacity" values="0.5;1;0.5" dur="0.8s" repeatCount="indefinite" />
+        <animateTransform attributeName="transform" type="translate" values="0,0;0,-5;0,0" dur="1.5s"
+                          additive="sum" repeatCount="indefinite" />
+      </path>
+
+      <!-- Extra tiny sparkles orbiting -->
+      <g id="orbiting-sparkles">
+        <circle cx="30" cy="70" r="2" fill="#fbbf24">
+          <animateTransform attributeName="transform" type="rotate"
+                            values="0 100 100; 360 100 100" dur="4s" repeatCount="indefinite" />
+        </circle>
+        <circle cx="170" cy="110" r="2" fill="#f093fb">
+          <animateTransform attributeName="transform" type="rotate"
+                            values="0 100 100; -360 100 100" dur="5s" repeatCount="indefinite" />
+        </circle>
+        <circle cx="50" cy="130" r="1.5" fill="#10b981">
+          <animateTransform attributeName="transform" type="rotate"
+                            values="0 100 100; 360 100 100" dur="6s" repeatCount="indefinite" />
+        </circle>
+      </g>
+    </g>
+  </g>
+
+  <!-- Text: "CogRepo" -->
+  <text x="100" y="185" font-family="'SF Pro Display', -apple-system, system-ui, sans-serif"
+        font-size="22" font-weight="700" text-anchor="middle" fill="#2d3748">
+    Cog<tspan fill="#667eea">Repo</tspan>
+  </text>
+
+  <!-- Subtle subtitle -->
+  <text x="100" y="195" font-family="'SF Pro Display', -apple-system, system-ui, sans-serif"
+        font-size="8" font-weight="500" text-anchor="middle" fill="#718096" opacity="0.7">
+    ✨ Your Brain's Filing Cabinet ✨
+  </text>
+</svg>

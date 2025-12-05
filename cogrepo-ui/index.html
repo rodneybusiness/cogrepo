@@ -103,12 +103,26 @@
     <div class="container">
       <!-- Header -->
       <header class="app-header">
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <h1 class="app-logo">CogRepo</h1>
-          <span id="v2Status" class="v2-status-badge loading">v2</span>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <!-- Amazing Logo -->
+          <img src="static/img/cogrepo-logo.svg" alt="CogRepo Logo - Your Brain's Filing Cabinet"
+               style="width: 80px; height: 80px; animation: float 3s ease-in-out infinite;">
+          <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <h1 class="app-logo">CogRepo</h1>
+              <span id="v2Status" class="v2-status-badge loading">v2</span>
+            </div>
+            <p class="app-tagline">Your Brain's Filing Cabinet</p>
+          </div>
         </div>
-        <p class="app-tagline">Explore Your AI Conversation Archive</p>
       </header>
+
+      <style>
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+      </style>
 
       <!-- Navigation Tabs -->
       <nav class="tabs" role="tablist" aria-label="Main navigation">
