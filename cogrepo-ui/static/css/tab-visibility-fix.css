@@ -1,0 +1,51 @@
+/**
+ * Tab Visibility Fix
+ * Makes tab labels (Search, Artifacts, Projects, Chains) much more visible
+ */
+
+.tab {
+  color: var(--color-neutral-700) !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+}
+
+.tab:hover {
+  color: var(--color-neutral-900) !important;
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.tab.active {
+  color: var(--color-primary-600) !important;
+  font-weight: 700 !important;
+  border-bottom-color: var(--color-primary-600) !important;
+  border-bottom-width: 3px !important;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .tab {
+    color: var(--color-neutral-300) !important;
+  }
+
+  .tab:hover {
+    color: var(--color-neutral-100) !important;
+    background: rgba(20, 184, 166, 0.1);
+  }
+
+  .tab.active {
+    color: var(--color-primary-400) !important;
+  }
+}
+
+[data-theme="dark"] .tab {
+  color: var(--color-neutral-300) !important;
+}
+
+[data-theme="dark"] .tab:hover {
+  color: var(--color-neutral-100) !important;
+  background: rgba(20, 184, 166, 0.1);
+}
+
+[data-theme="dark"] .tab.active {
+  color: var(--color-primary-400) !important;
+}
