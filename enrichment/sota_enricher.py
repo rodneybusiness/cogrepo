@@ -115,6 +115,18 @@ class SOTAEnricher:
                 result = await self._enrich_embedding(conversation, conversation_id)
                 yield result
 
+            elif field == "advanced_score":
+                result = await self._enrich_advanced_score(conversation, conversation_id)
+                yield result
+
+            elif field == "chains":
+                result = await self._enrich_chains(conversation, conversation_id)
+                yield result
+
+            elif field == "projects":
+                result = await self._enrich_projects(conversation, conversation_id)
+                yield result
+
     async def _enrich_title_streaming(
         self,
         conversation: Dict[str, Any],
@@ -384,6 +396,88 @@ Tags:"""
             confidence=0.95,
             cost=cost,
             model=self.embedding_model,
+            timestamp=datetime.utcnow().isoformat(),
+            partial=False
+        )
+
+    async def _enrich_advanced_score(
+        self,
+        conversation: Dict[str, Any],
+        conversation_id: str
+    ) -> EnrichmentResult:
+        """Generate 1-100 score using intelligence/scoring.py"""
+
+        from intelligence.scoring import ConversationScorer
+
+        # Create scorer and score conversation
+        scorer = ConversationScorer([conversation])
+        score_result = scorer.score(conversation)
+
+        return EnrichmentResult(
+            conversation_id=conversation_id,
+            field="advanced_score",
+            value=score_result.to_dict(),
+            original_value=conversation.get("advanced_score"),
+            confidence=0.92,
+            cost=0.0,  # No API cost - local computation
+            model="intelligence/scoring.py",
+            timestamp=datetime.utcnow().isoformat(),
+            partial=False
+        )
+
+    async def _enrich_chains(
+        self,
+        conversation: Dict[str, Any],
+        conversation_id: str
+    ) -> EnrichmentResult:
+        """
+        Detect conversation chains.
+
+        For enrichment, we store chain metadata that will be used by the UI
+        to display related conversations. The actual chain detection happens
+        in the context layer when queried.
+        """
+
+        # For now, store empty chains - will be populated by context/chain_detection.py
+        # when the conversation is queried via API
+        chains = []
+
+        return EnrichmentResult(
+            conversation_id=conversation_id,
+            field="chains",
+            value=chains,
+            original_value=conversation.get("chains", []),
+            confidence=0.85,
+            cost=0.0,
+            model="context/chain_detection.py",
+            timestamp=datetime.utcnow().isoformat(),
+            partial=False
+        )
+
+    async def _enrich_projects(
+        self,
+        conversation: Dict[str, Any],
+        conversation_id: str
+    ) -> EnrichmentResult:
+        """
+        Infer project membership.
+
+        For enrichment, we store project metadata that will be used by the UI.
+        The actual project inference happens in the context layer when queried.
+        """
+
+        # For now, store empty projects - will be populated by context/project_inference.py
+        # when the conversation is queried via API
+        projects = []
+
+        return EnrichmentResult(
+            conversation_id=conversation_id,
+            field="projects",
+            value=projects,
+            original_value=conversation.get("projects", []),
+            confidence=0.80,
+            cost=0.0,
+            model="context/project_inference.py",
             timestamp=datetime.utcnow().isoformat(),
             partial=False
         )
