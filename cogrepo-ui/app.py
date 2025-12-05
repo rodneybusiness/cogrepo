@@ -627,34 +627,30 @@ def api_search():
             )
 
             # Convert SearchResult objects to dicts and apply remaining filters
+            # Use database for fast lookups instead of reading entire JSONL file
+            from database.repository import ConversationRepository
+            conv_repo = ConversationRepository(db_path)
+
             results = []
             for sr in search_results:
-                # Load full conversation from repo
-                with open(repo_path, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line:
-                            try:
-                                conv = json.loads(line)
-                                if conv.get('convo_id') == sr.convo_id:
-                                    # Apply date filters
-                                    conv_date = conv.get('create_time', '')
-                                    if date_from and conv_date < date_from:
-                                        break
-                                    if date_to and conv_date > date_to:
-                                        break
+                # Get conversation from database
+                conv = conv_repo.get(sr.convo_id)
+                if conv:
+                    # Apply date filters
+                    conv_date = conv.get('create_time', '')
+                    if date_from and conv_date < date_from:
+                        continue
+                    if date_to and conv_date > date_to:
+                        continue
 
-                                    # Add search metadata
-                                    conv['_search'] = {
-                                        'score': sr.score,
-                                        'bm25_score': sr.bm25_score,
-                                        'semantic_score': sr.semantic_score,
-                                        'matched_terms': sr.matched_terms
-                                    }
-                                    results.append(conv)
-                                    break
-                            except (json.JSONDecodeError, ValueError):
-                                continue
+                    # Add search metadata
+                    conv['_search'] = {
+                        'score': sr.score,
+                        'bm25_score': sr.bm25_score,
+                        'semantic_score': sr.semantic_score,
+                        'matched_terms': sr.matched_terms
+                    }
+                    results.append(conv)
 
             total = len(results)
 
