@@ -779,6 +779,13 @@ body > * {
   color: var(--color-danger-700);
 }
 
+.tag-count {
+  font-size: var(--font-size-xs);
+  opacity: 0.6;
+  font-weight: var(--font-weight-normal);
+  margin-left: var(--space-1);
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

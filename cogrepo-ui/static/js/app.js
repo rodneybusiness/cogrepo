@@ -141,6 +141,7 @@ function renderConversationCard(conversation, query = '') {
     timestamp,
     tags = [],
     score,
+    advanced_score,
     relevance
   } = conversation;
 
@@ -169,8 +170,13 @@ function renderConversationCard(conversation, query = '') {
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 0.5rem;">
-        ${score ? `
-          <div class="conversation-score">
+        ${advanced_score ? `
+          <div class="conversation-score advanced-score">
+            <span class="score-value">${advanced_score.overall}</span>
+            <span class="score-grade grade-${advanced_score.grade.replace('+', 'plus').replace('-', 'minus')}">${advanced_score.grade}</span>
+          </div>
+        ` : score ? `
+          <div class="conversation-score legacy-score">
             <span class="score-value">${score}</span>
             <span class="score-label">Score</span>
           </div>
@@ -380,10 +386,20 @@ function renderStatsBar(stats) {
 function renderTagsCloud(tags) {
   if (!tags || tags.size === 0) return '';
 
-  // Get top tags sorted by count
+  // Filter and sort tags
+  // - Filter out malformed tags (with brackets, quotes, etc.)
+  // - Only show tags with at least 5 occurrences
+  // - Take top 50 tags by frequency
   const sortedTags = [...tags.entries()]
+    .filter(([tag, count]) => {
+      // Filter out malformed tags
+      if (!tag || tag.length < 2) return false;
+      if (tag.includes('[') || tag.includes(']') || tag.includes('"') || tag.includes("'")) return false;
+      // Filter by minimum occurrence
+      return count >= 5;
+    })
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 30);
+    .slice(0, 50);
 
   if (sortedTags.length === 0) return '';
 
@@ -396,8 +412,9 @@ function renderTagsCloud(tags) {
       </div>
       <div class="tags-cloud-list">
         ${sortedTags.map(([tag, count]) => {
-          const size = Math.ceil((count / maxCount) * 5);
-          return `<span class="tag tag-interactive cloud-tag" data-size="${size}" data-tag="${CogRepoUI.escapeHTML(tag)}">${CogRepoUI.escapeHTML(tag)}</span>`;
+          // Scale size from 1-5 based on frequency
+          const size = Math.min(Math.ceil((count / maxCount) * 5), 5);
+          return `<span class="tag tag-interactive cloud-tag" data-size="${size}" data-tag="${CogRepoUI.escapeHTML(tag)}">${CogRepoUI.escapeHTML(tag)} <span class="tag-count">(${count})</span></span>`;
         }).join('')}
       </div>
     </div>
@@ -1002,6 +1019,48 @@ class CogRepoApp {
       ${conversation.tags?.length ? `
         <div class="conversation-tags mb-6">
           ${conversation.tags.map(tag => `<span class="tag">${CogRepoUI.escapeHTML(tag)}</span>`).join('')}
+        </div>
+      ` : ''}
+
+      ${conversation.advanced_score ? `
+        <div class="ai-insights">
+          <h4 class="ai-insights-title">📊 Advanced Score</h4>
+          <div class="insights-grid">
+            <div class="insight-item">
+              <div class="insight-label">Overall Score</div>
+              <div class="insight-value">${conversation.advanced_score.overall}/100 (${conversation.advanced_score.grade})</div>
+            </div>
+            ${conversation.advanced_score.dimensions ? Object.entries(conversation.advanced_score.dimensions).map(([dim, data]) => `
+              <div class="insight-item">
+                <div class="insight-label">${dim.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                <div class="insight-value">${data.value}/100</div>
+              </div>
+            `).join('') : ''}
+          </div>
+        </div>
+      ` : ''}
+
+      ${conversation.chains?.length ? `
+        <div class="ai-insights">
+          <h4 class="ai-insights-title">🔗 Related Conversations</h4>
+          <div class="chains-list">
+            ${conversation.chains.map(chain => `
+              <a href="#" class="chain-link" data-id="${chain.id}">
+                ${CogRepoUI.escapeHTML(chain.title || chain.id)}
+              </a>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+
+      ${conversation.projects?.length ? `
+        <div class="ai-insights">
+          <h4 class="ai-insights-title">📂 Projects</h4>
+          <div class="projects-list">
+            ${conversation.projects.map(proj => `
+              <span class="tag tag-primary">${CogRepoUI.escapeHTML(proj.name || proj)}</span>
+            `).join('')}
+          </div>
         </div>
       ` : ''}
 
