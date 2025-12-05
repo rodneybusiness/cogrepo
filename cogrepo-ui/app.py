@@ -570,13 +570,13 @@ def api_search():
             from search.embeddings import EmbeddingStore
 
             # Initialize embedding store
-            embeddings_path = str(Path(__file__).parent.parent / 'data' / 'embeddings.npy')
+            embeddings_dir = str(Path(__file__).parent.parent / 'data')
             embedding_store = None
 
-            if os.path.exists(embeddings_path) and not bm25_only:
+            if os.path.exists(os.path.join(embeddings_dir, 'embeddings.npy')) and not bm25_only:
                 try:
-                    embedding_store = EmbeddingStore(embeddings_path)
-                    print(f"  [OK] Loaded embeddings from {embeddings_path}")
+                    embedding_store = EmbeddingStore(embeddings_dir)
+                    print(f"  [OK] Loaded embeddings from {embeddings_dir}")
                 except Exception as e:
                     print(f"  [!!] Failed to load embeddings: {e}")
                     if semantic_only:
