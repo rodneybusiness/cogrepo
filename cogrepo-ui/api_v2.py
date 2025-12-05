@@ -31,7 +31,7 @@ def get_data_dir() -> Path:
 
 def get_db_path() -> str:
     """Get the database path."""
-    return str(get_data_dir() / "cogrepo.db")
+    return str(get_data_dir() / "conversations.db")
 
 
 def get_embedding_store_path() -> str:
