@@ -642,6 +642,7 @@ class CogRepoApp {
    */
   sortResults(results) {
     const sortOption = this.store.state.sort || 'date-desc';
+    console.log(`[Sort] Sorting ${results.length} results by: ${sortOption}`);
 
     switch (sortOption) {
       case 'relevance':
@@ -654,19 +655,35 @@ class CogRepoApp {
         break;
 
       case 'date-desc':
-        results.sort((a, b) => new Date(b.create_time) - new Date(a.create_time));
+        results.sort((a, b) => {
+          const dateA = new Date(a.create_time);
+          const dateB = new Date(b.create_time);
+          return dateB - dateA;
+        });
         break;
 
       case 'date-asc':
-        results.sort((a, b) => new Date(a.create_time) - new Date(b.create_time));
+        results.sort((a, b) => {
+          const dateA = new Date(a.create_time);
+          const dateB = new Date(b.create_time);
+          return dateA - dateB;
+        });
         break;
 
       case 'score-desc':
-        results.sort((a, b) => (b.score || 0) - (a.score || 0));
+        results.sort((a, b) => {
+          const scoreA = a.score || 0;
+          const scoreB = b.score || 0;
+          return scoreB - scoreA;
+        });
         break;
 
       case 'score-asc':
-        results.sort((a, b) => (a.score || 0) - (b.score || 0));
+        results.sort((a, b) => {
+          const scoreA = a.score || 0;
+          const scoreB = b.score || 0;
+          return scoreA - scoreB;
+        });
         break;
 
       case 'title-asc':
@@ -687,8 +704,24 @@ class CogRepoApp {
 
       default:
         // Default to date descending
-        results.sort((a, b) => new Date(b.create_time) - new Date(a.create_time));
+        results.sort((a, b) => {
+          const dateA = new Date(a.create_time);
+          const dateB = new Date(b.create_time);
+          return dateB - dateA;
+        });
     }
+
+    // Log first few results for debugging
+    if (results.length > 0) {
+      const sample = results.slice(0, 3).map(r => ({
+        title: (r.generated_title || r.title || '').substring(0, 50),
+        date: r.create_time,
+        score: r.score
+      }));
+      console.log('[Sort] Sample of sorted results:', sample);
+    }
+
+    return results;
   }
 
   /**
@@ -981,7 +1014,10 @@ class CogRepoApp {
       // Re-attach event listeners
       document.getElementById('sortSelect')?.addEventListener('change', (e) => {
         this.store.setState({ sort: e.target.value });
-        this._renderResults(results, query);
+        // Make a copy of current results and re-sort
+        const sortedResults = [...results];
+        this.sortResults(sortedResults);
+        this._renderResults(sortedResults, query);
       });
       document.getElementById('saveSearchBtn')?.addEventListener('click', () => this.saveCurrentSearch());
       document.getElementById('exportBtn')?.addEventListener('click', () => this.exportResults());
