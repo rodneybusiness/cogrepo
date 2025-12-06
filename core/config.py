@@ -18,7 +18,7 @@ Usage:
 
 import os
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Set
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
@@ -465,6 +465,355 @@ class ArchiveConfig(BaseModel):
 
 
 # =============================================================================
+# OpenAI Configuration
+# =============================================================================
+
+class OpenAIConfig(BaseModel):
+    """OpenAI API configuration."""
+
+    api_key: Optional[str] = Field(
+        default=None,
+        description="OpenAI API key"
+    )
+    base_url: Optional[str] = Field(
+        default=None,
+        description="Custom base URL (for Azure or compatible APIs)"
+    )
+    model: str = Field(
+        default="gpt-4o",
+        description="Default model"
+    )
+    fast_model: str = Field(
+        default="gpt-4o-mini",
+        description="Fast/cheap model for simple tasks"
+    )
+    max_tokens: int = Field(
+        default=4096,
+        ge=100,
+        le=128000,
+        description="Maximum tokens for API responses"
+    )
+    temperature: float = Field(
+        default=0.3,
+        ge=0.0,
+        le=2.0,
+        description="Temperature for API calls"
+    )
+
+    @property
+    def is_configured(self) -> bool:
+        """Check if API key is configured."""
+        return bool(self.api_key)
+
+    @model_validator(mode='after')
+    def load_api_key_from_env(self):
+        """Load API key from environment if not set."""
+        if self.api_key is None:
+            self.api_key = os.getenv('OPENAI_API_KEY')
+        return self
+
+
+# =============================================================================
+# Ollama Configuration (Local Models)
+# =============================================================================
+
+class OllamaConfig(BaseModel):
+    """Ollama local model configuration."""
+
+    base_url: str = Field(
+        default="http://localhost:11434",
+        description="Ollama server URL"
+    )
+    model: str = Field(
+        default="llama3.1",
+        description="Default model"
+    )
+    fast_model: str = Field(
+        default="llama3.2",
+        description="Fast model for simple tasks"
+    )
+    advanced_model: str = Field(
+        default="mixtral",
+        description="Advanced model for complex tasks"
+    )
+    timeout: int = Field(
+        default=120,
+        ge=10,
+        description="Request timeout in seconds"
+    )
+
+    @property
+    def is_configured(self) -> bool:
+        """Check if Ollama server is likely available."""
+        return bool(self.base_url)
+
+
+# =============================================================================
+# LLM Provider Configuration
+# =============================================================================
+
+class LLMProviderConfig(BaseModel):
+    """Multi-provider LLM configuration."""
+
+    # Primary provider
+    primary_provider: str = Field(
+        default="anthropic",
+        description="Primary LLM provider (anthropic, openai, ollama)"
+    )
+
+    # Fallback chain
+    fallback_providers: List[str] = Field(
+        default_factory=lambda: ["openai", "ollama"],
+        description="Ordered list of fallback providers"
+    )
+
+    # Provider configs (reference existing configs)
+    # These are populated from the main Config class
+
+    # Cost controls
+    max_cost_per_conversation_usd: float = Field(
+        default=0.10,
+        ge=0.0,
+        description="Max cost per conversation enrichment"
+    )
+    max_cost_per_run_usd: float = Field(
+        default=10.0,
+        ge=0.0,
+        description="Max cost per enrichment run"
+    )
+
+    # Routing preferences
+    prefer_local_for_pii: bool = Field(
+        default=True,
+        description="Route PII-containing content to local models"
+    )
+    use_fast_models_for_simple_tasks: bool = Field(
+        default=True,
+        description="Use cheaper models for tags, titles, etc."
+    )
+
+    @field_validator('primary_provider')
+    @classmethod
+    def validate_provider(cls, v):
+        """Validate provider name."""
+        valid_providers = ['anthropic', 'openai', 'ollama']
+        if v.lower() not in valid_providers:
+            raise ValueError(f"Invalid provider: {v}. Must be one of {valid_providers}")
+        return v.lower()
+
+
+# =============================================================================
+# PII Configuration
+# =============================================================================
+
+class PIIConfig(BaseModel):
+    """PII detection and scrubbing configuration."""
+
+    enabled: bool = Field(
+        default=True,
+        description="Enable PII detection and scrubbing"
+    )
+
+    # Scrubbing mode
+    scrub_mode: str = Field(
+        default="redact",
+        description="Scrub mode: redact, hash, mask, remove, tokenize"
+    )
+    redact_placeholder: str = Field(
+        default="[REDACTED-{type}]",
+        description="Placeholder for redacted content"
+    )
+
+    # Detection toggles
+    detect_emails: bool = Field(default=True, description="Detect email addresses")
+    detect_phones: bool = Field(default=True, description="Detect phone numbers")
+    detect_ssn: bool = Field(default=True, description="Detect SSNs")
+    detect_credit_cards: bool = Field(default=True, description="Detect credit cards")
+    detect_api_keys: bool = Field(default=True, description="Detect API keys")
+    detect_aws_keys: bool = Field(default=True, description="Detect AWS keys")
+    detect_ip_addresses: bool = Field(default=True, description="Detect IP addresses")
+
+    # Severity filtering
+    min_severity: str = Field(
+        default="low",
+        description="Minimum severity to detect (low, medium, high, critical)"
+    )
+
+    # Vault settings
+    enable_vault: bool = Field(
+        default=False,
+        description="Enable reversible tokenization vault"
+    )
+    vault_path: Optional[str] = Field(
+        default=None,
+        description="Path to PII vault file"
+    )
+
+    # Allowlists
+    allowed_domains: Set[str] = Field(
+        default_factory=set,
+        description="Email domains to skip (e.g., company domains)"
+    )
+    allowed_ips: Set[str] = Field(
+        default_factory=set,
+        description="IP addresses to skip"
+    )
+
+    @field_validator('scrub_mode')
+    @classmethod
+    def validate_scrub_mode(cls, v):
+        """Validate scrub mode."""
+        valid_modes = ['redact', 'hash', 'mask', 'remove', 'tokenize']
+        if v.lower() not in valid_modes:
+            raise ValueError(f"Invalid scrub mode: {v}. Must be one of {valid_modes}")
+        return v.lower()
+
+    @field_validator('min_severity')
+    @classmethod
+    def validate_severity(cls, v):
+        """Validate severity level."""
+        valid_levels = ['low', 'medium', 'high', 'critical']
+        if v.lower() not in valid_levels:
+            raise ValueError(f"Invalid severity: {v}. Must be one of {valid_levels}")
+        return v.lower()
+
+
+# =============================================================================
+# Evaluation Configuration
+# =============================================================================
+
+class EvaluationConfig(BaseModel):
+    """Evaluation and feedback system configuration."""
+
+    enabled: bool = Field(
+        default=True,
+        description="Enable evaluation system"
+    )
+
+    # Storage
+    db_path: Optional[str] = Field(
+        default=None,
+        description="Path to evaluation database (defaults to data/evaluation.db)"
+    )
+
+    # Tracking options
+    track_recommendations: bool = Field(
+        default=True,
+        description="Track recommendation quality"
+    )
+    track_clustering: bool = Field(
+        default=True,
+        description="Track clustering quality"
+    )
+    track_tags: bool = Field(
+        default=True,
+        description="Track tag quality"
+    )
+    track_summaries: bool = Field(
+        default=True,
+        description="Track summary quality"
+    )
+
+    # Feedback collection
+    enable_feedback_api: bool = Field(
+        default=True,
+        description="Enable feedback API endpoints"
+    )
+    feedback_retention_days: int = Field(
+        default=365,
+        ge=1,
+        description="Days to retain feedback data"
+    )
+
+    # Quality thresholds
+    min_satisfaction_rate: float = Field(
+        default=0.7,
+        ge=0.0,
+        le=1.0,
+        description="Minimum acceptable satisfaction rate"
+    )
+    alert_on_degradation: bool = Field(
+        default=True,
+        description="Alert when quality degrades below threshold"
+    )
+
+
+# =============================================================================
+# Metrics Configuration
+# =============================================================================
+
+class MetricsConfig(BaseModel):
+    """Observability and metrics configuration."""
+
+    enabled: bool = Field(
+        default=True,
+        description="Enable metrics collection"
+    )
+
+    # Storage
+    persist_metrics: bool = Field(
+        default=True,
+        description="Persist metrics to disk"
+    )
+    metrics_path: Optional[str] = Field(
+        default=None,
+        description="Path to metrics file (defaults to data/metrics.json)"
+    )
+
+    # Dashboard
+    dashboard_enabled: bool = Field(
+        default=True,
+        description="Enable metrics dashboard API"
+    )
+
+    # Collection options
+    track_api_calls: bool = Field(
+        default=True,
+        description="Track API call metrics"
+    )
+    track_costs: bool = Field(
+        default=True,
+        description="Track API costs"
+    )
+    track_latency: bool = Field(
+        default=True,
+        description="Track request latency"
+    )
+    track_errors: bool = Field(
+        default=True,
+        description="Track error rates"
+    )
+
+    # Retention
+    max_historical_runs: int = Field(
+        default=100,
+        ge=1,
+        description="Maximum number of runs to keep in history"
+    )
+
+    # Alerting
+    enable_alerts: bool = Field(
+        default=False,
+        description="Enable alerting (requires webhook URL)"
+    )
+    alert_webhook_url: Optional[str] = Field(
+        default=None,
+        description="Webhook URL for alerts"
+    )
+    error_rate_threshold: float = Field(
+        default=0.1,
+        ge=0.0,
+        le=1.0,
+        description="Error rate threshold for alerts"
+    )
+    cost_threshold_usd: float = Field(
+        default=50.0,
+        ge=0.0,
+        description="Cost threshold for alerts (per day)"
+    )
+
+
+# =============================================================================
 # Main Configuration Class
 # =============================================================================
 
@@ -489,11 +838,17 @@ class Config(BaseSettings):
     # Sub-configurations
     paths: PathConfig = Field(default_factory=PathConfig)
     anthropic: AnthropicConfig = Field(default_factory=AnthropicConfig)
+    openai: OpenAIConfig = Field(default_factory=OpenAIConfig)
+    ollama: OllamaConfig = Field(default_factory=OllamaConfig)
+    llm: LLMProviderConfig = Field(default_factory=LLMProviderConfig)
+    pii: PIIConfig = Field(default_factory=PIIConfig)
     enrichment: EnrichmentConfig = Field(default_factory=EnrichmentConfig)
     search: SearchConfig = Field(default_factory=SearchConfig)
     web_ui: WebUIConfig = Field(default_factory=WebUIConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     archive: ArchiveConfig = Field(default_factory=ArchiveConfig)
+    evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
+    metrics: MetricsConfig = Field(default_factory=MetricsConfig)
 
     # Application metadata
     app_name: str = Field(default="CogRepo")
@@ -553,8 +908,13 @@ class Config(BaseSettings):
             if data.get('anthropic', {}).get('api_key'):
                 key = data['anthropic']['api_key']
                 data['anthropic']['api_key'] = f"{key[:10]}...{key[-4:]}" if len(key) > 14 else "***"
+            if data.get('openai', {}).get('api_key'):
+                key = data['openai']['api_key']
+                data['openai']['api_key'] = f"{key[:10]}...{key[-4:]}" if len(key) > 14 else "***"
             if data.get('web_ui', {}).get('secret_key'):
                 data['web_ui']['secret_key'] = "***"
+            if data.get('metrics', {}).get('alert_webhook_url'):
+                data['metrics']['alert_webhook_url'] = "***"
 
         return data
 

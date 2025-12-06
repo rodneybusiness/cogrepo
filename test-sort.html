@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sort Function Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .test { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .pass { background: #d4edda; }
+        .fail { background: #f8d7da; }
+        h2 { margin-top: 30px; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>CogRepo Sort Function Tests</h1>
+    <div id="results"></div>
+
+    <script>
+        // Sample test data
+        const testData = [
+            {
+                convo_id: '1',
+                title: 'Zebra Discussion',
+                generated_title: 'Zebra Discussion',
+                create_time: '2024-01-15T10:00:00Z',
+                score: 7.5,
+                _search: { score: 85 }
+            },
+            {
+                convo_id: '2',
+                title: 'Alpha Project',
+                generated_title: 'Alpha Project',
+                create_time: '2024-03-20T14:30:00Z',
+                score: 9.2,
+                _search: { score: 92 }
+            },
+            {
+                convo_id: '3',
+                title: 'Beta Testing',
+                generated_title: 'Beta Testing',
+                create_time: '2024-02-10T08:15:00Z',
+                score: 5.3,
+                _search: { score: 53 }
+            },
+            {
+                convo_id: '4',
+                title: 'Gamma Ray',
+                generated_title: 'Gamma Ray',
+                create_time: '2024-04-05T16:45:00Z',
+                score: 8.7,
+                _search: { score: 87 }
+            },
+            {
+                convo_id: '5',
+                title: 'Delta Force',
+                generated_title: 'Delta Force',
+                create_time: '2024-01-01T00:00:00Z',
+                score: 6.1,
+                _search: { score: 61 }
+            }
+        ];
+
+        // Sort functions (copied from app.js)
+        function sortResults(results, sortOption) {
+            const sorted = [...results]; // Clone array
+
+            switch (sortOption) {
+                case 'relevance':
+                    sorted.sort((a, b) => {
+                        const scoreA = a._search?.score || 0;
+                        const scoreB = b._search?.score || 0;
+                        return scoreB - scoreA;
+                    });
+                    break;
+
+                case 'date-desc':
+                    sorted.sort((a, b) => {
+                        const dateA = new Date(a.create_time);
+                        const dateB = new Date(b.create_time);
+                        return dateB - dateA;
+                    });
+                    break;
+
+                case 'date-asc':
+                    sorted.sort((a, b) => {
+                        const dateA = new Date(a.create_time);
+                        const dateB = new Date(b.create_time);
+                        return dateA - dateB;
+                    });
+                    break;
+
+                case 'score-desc':
+                    sorted.sort((a, b) => {
+                        const scoreA = a.score || 0;
+                        const scoreB = b.score || 0;
+                        return scoreB - scoreA;
+                    });
+                    break;
+
+                case 'score-asc':
+                    sorted.sort((a, b) => {
+                        const scoreA = a.score || 0;
+                        const scoreB = b.score || 0;
+                        return scoreA - scoreB;
+                    });
+                    break;
+
+                case 'title-asc':
+                    sorted.sort((a, b) => {
+                        const titleA = (a.generated_title || a.title || '').toLowerCase();
+                        const titleB = (b.generated_title || b.title || '').toLowerCase();
+                        return titleA.localeCompare(titleB);
+                    });
+                    break;
+
+                case 'title-desc':
+                    sorted.sort((a, b) => {
+                        const titleA = (a.generated_title || a.title || '').toLowerCase();
+                        const titleB = (b.generated_title || b.title || '').toLowerCase();
+                        return titleB.localeCompare(titleA);
+                    });
+                    break;
+
+                default:
+                    sorted.sort((a, b) => {
+                        const dateA = new Date(a.create_time);
+                        const dateB = new Date(b.create_time);
+                        return dateB - dateA;
+                    });
+            }
+
+            return sorted;
+        }
+
+        // Test cases
+        const tests = [
+            {
+                name: 'Relevance (Best Match First)',
+                sort: 'relevance',
+                expected: ['2', '4', '1', '5', '3'], // By _search.score desc: 92, 87, 85, 61, 53
+                validator: (sorted) => sorted.map(r => r.convo_id)
+            },
+            {
+                name: 'Date (Newest First)',
+                sort: 'date-desc',
+                expected: ['4', '2', '3', '1', '5'], // By date desc: Apr, Mar, Feb, Jan-15, Jan-01
+                validator: (sorted) => sorted.map(r => r.convo_id)
+            },
+            {
+                name: 'Date (Oldest First)',
+                sort: 'date-asc',
+                expected: ['5', '1', '3', '2', '4'], // By date asc: Jan-01, Jan-15, Feb, Mar, Apr
+                validator: (sorted) => sorted.map(r => r.convo_id)
+            },
+            {
+                name: 'Intelligence Score (Highest)',
+                sort: 'score-desc',
+                expected: ['2', '4', '1', '5', '3'], // By score desc: 9.2, 8.7, 7.5, 6.1, 5.3
+                validator: (sorted) => sorted.map(r => r.convo_id)
+            },
+            {
+                name: 'Intelligence Score (Lowest)',
+                sort: 'score-asc',
+                expected: ['3', '5', '1', '4', '2'], // By score asc: 5.3, 6.1, 7.5, 8.7, 9.2
+                validator: (sorted) => sorted.map(r => r.convo_id)
+            },
+            {
+                name: 'Title (A-Z)',
+                sort: 'title-asc',
+                expected: ['2', '3', '5', '4', '1'], // Alphabetical: Alpha, Beta, Delta, Gamma, Zebra
+                validator: (sorted) => sorted.map(r => r.convo_id)
+            },
+            {
+                name: 'Title (Z-A)',
+                sort: 'title-desc',
+                expected: ['1', '4', '5', '3', '2'], // Reverse: Zebra, Gamma, Delta, Beta, Alpha
+                validator: (sorted) => sorted.map(r => r.convo_id)
+            }
+        ];
+
+        // Run tests
+        const resultsDiv = document.getElementById('results');
+        let passCount = 0;
+        let failCount = 0;
+
+        tests.forEach(test => {
+            const sorted = sortResults(testData, test.sort);
+            const actual = test.validator(sorted);
+            const passed = JSON.stringify(actual) === JSON.stringify(test.expected);
+
+            if (passed) passCount++;
+            else failCount++;
+
+            const testDiv = document.createElement('div');
+            testDiv.className = `test ${passed ? 'pass' : 'fail'}`;
+            testDiv.innerHTML = `
+                <h3>${passed ? '✅' : '❌'} ${test.name}</h3>
+                <p><strong>Sort Option:</strong> ${test.sort}</p>
+                <p><strong>Expected Order:</strong> ${test.expected.join(', ')}</p>
+                <p><strong>Actual Order:</strong> ${actual.join(', ')}</p>
+                ${!passed ? '<p style="color: red;"><strong>FAILED</strong></p>' : ''}
+                <details>
+                    <summary>Show Sorted Data</summary>
+                    <pre>${JSON.stringify(sorted.map(r => ({
+                        id: r.convo_id,
+                        title: r.generated_title,
+                        date: r.create_time,
+                        score: r.score,
+                        search_score: r._search?.score
+                    })), null, 2)}</pre>
+                </details>
+            `;
+            resultsDiv.appendChild(testDiv);
+        });
+
+        // Summary
+        const summaryDiv = document.createElement('div');
+        summaryDiv.innerHTML = `
+            <h2>Test Summary</h2>
+            <p><strong>Total Tests:</strong> ${tests.length}</p>
+            <p style="color: green;"><strong>Passed:</strong> ${passCount}</p>
+            <p style="color: red;"><strong>Failed:</strong> ${failCount}</p>
+            <p><strong>Success Rate:</strong> ${((passCount / tests.length) * 100).toFixed(1)}%</p>
+        `;
+        resultsDiv.insertBefore(summaryDiv, resultsDiv.firstChild);
+    </script>
+</body>
+</html>

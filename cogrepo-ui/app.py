@@ -94,6 +94,14 @@ try:
 except ImportError as e:
     print(f"  [!!] Intelligence API not available: {e}")
 
+# Register evaluation and metrics API blueprint
+try:
+    from api_evaluation import evaluation_api
+    app.register_blueprint(evaluation_api, url_prefix='/api/evaluation')
+    print("  [OK] Evaluation API registered at /api/evaluation")
+except ImportError as e:
+    print(f"  [!!] Evaluation API not available: {e}")
+
 # Register SOTA enrichment API blueprint
 try:
     from enrichment_api import enrichment_bp

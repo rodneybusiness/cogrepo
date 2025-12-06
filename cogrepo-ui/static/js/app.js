@@ -646,11 +646,28 @@ class CogRepoApp {
 
     switch (sortOption) {
       case 'relevance':
-        // If there's search metadata, sort by combined score
+        // Intelligent relevance sorting: prioritize search score, then intelligence score, then date
         results.sort((a, b) => {
-          const scoreA = a._search?.score || 0;
-          const scoreB = b._search?.score || 0;
-          return scoreB - scoreA;
+          // Primary: Search relevance score (BM25 + semantic)
+          const searchScoreA = a._search?.score || 0;
+          const searchScoreB = b._search?.score || 0;
+
+          if (searchScoreA !== searchScoreB) {
+            return searchScoreB - searchScoreA;
+          }
+
+          // Secondary: Intelligence/quality score
+          const qualityA = (a.score || 0) * 10; // Scale to 0-100
+          const qualityB = (b.score || 0) * 10;
+
+          if (Math.abs(qualityA - qualityB) > 5) { // Meaningful difference
+            return qualityB - qualityA;
+          }
+
+          // Tertiary: Recency (newer is better for tie-breaking)
+          const dateA = new Date(a.create_time);
+          const dateB = new Date(b.create_time);
+          return dateB - dateA;
         });
         break;
 

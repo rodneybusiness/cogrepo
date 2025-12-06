@@ -1,33 +1,109 @@
 # CogRepo Enrichment Configuration
+# Version 2.0 - Multi-provider, PII-aware, Observable
 
-# API Configuration
-api:
-  provider: anthropic
-  model: claude-3-5-sonnet-20241022
-  # Set via environment variable: ANTHROPIC_API_KEY
-  # api_key_env: ANTHROPIC_API_KEY
+# =============================================================================
+# LLM Provider Configuration (NEW)
+# =============================================================================
+llm:
+  # Primary provider for enrichment
+  primary_provider: anthropic  # anthropic, openai, ollama
 
-  # Model parameters
-  max_tokens: 1500
+  # Fallback chain (tried in order if primary fails)
+  fallback_providers:
+    - openai
+    - ollama
+
+  # Cost controls
+  max_cost_per_conversation_usd: 0.10
+  max_cost_per_run_usd: 10.0
+
+  # Smart routing
+  prefer_local_for_pii: true      # Route PII content to local Ollama
+  use_fast_models_for_simple_tasks: true
+
+# =============================================================================
+# Provider-Specific Configuration
+# =============================================================================
+
+# Anthropic (Claude)
+anthropic:
+  # API key set via environment: ANTHROPIC_API_KEY
+  model: claude-sonnet-4-20250514
+  haiku_model: claude-3-5-haiku-20241022
+  max_tokens: 4096
+  temperature: 0.3
+  requests_per_minute: 50
+
+# OpenAI (GPT)
+openai:
+  # API key set via environment: OPENAI_API_KEY
+  model: gpt-4o
+  fast_model: gpt-4o-mini
+  max_tokens: 4096
   temperature: 0.3
 
-  # Cost optimization: Use Haiku for simpler tasks (5x cheaper)
+# Ollama (Local)
+ollama:
+  base_url: http://localhost:11434
+  model: llama3.1
+  fast_model: llama3.2
+  advanced_model: mixtral
+  timeout: 120
+
+# Legacy API config (for backwards compatibility)
+api:
+  provider: anthropic
+  model: claude-sonnet-4-20250514
+  max_tokens: 1500
+  temperature: 0.3
   use_haiku_for_simple_tasks: true
   haiku_model: claude-3-5-haiku-20241022
 
-# Processing Configuration
-processing:
-  batch_size: 50              # Conversations per batch
-  max_retries: 3              # Retry attempts for failed enrichments
-  retry_delay_seconds: 2      # Initial delay between retries (exponential backoff)
-  rate_limit_rpm: 50          # Requests per minute (API rate limit)
-  save_every_n_batches: 5     # Save state after N batches
+# =============================================================================
+# PII Configuration (NEW)
+# =============================================================================
+pii:
+  enabled: true
+  scrub_mode: redact  # redact, hash, mask, remove, tokenize
+  redact_placeholder: "[REDACTED-{type}]"
 
-  # Skip enrichment for very short conversations
+  # Detection toggles
+  detect_emails: true
+  detect_phones: true
+  detect_ssn: true
+  detect_credit_cards: true
+  detect_api_keys: true
+  detect_aws_keys: true
+  detect_ip_addresses: true
+
+  # Severity filtering (low, medium, high, critical)
+  min_severity: low
+
+  # Vault for reversible tokenization
+  enable_vault: false
+  vault_path: data/pii_vault.json
+
+  # Allowlists
+  allowed_domains: []  # e.g., ["company.com", "internal.org"]
+  allowed_ips: []      # e.g., ["192.168.1.1"]
+
+# =============================================================================
+# Processing Configuration
+# =============================================================================
+processing:
+  batch_size: 50
+  max_retries: 3
+  retry_delay_seconds: 2
+  rate_limit_rpm: 50
+  save_every_n_batches: 5
+
+  # Minimum requirements
   min_conversation_length_chars: 100
   min_message_count: 2
 
+# =============================================================================
 # Enrichment Features
+# =============================================================================
 enrichment:
   generate_titles: true
   generate_summaries: true
@@ -38,13 +114,13 @@ enrichment:
   # Title generation
   title:
     max_length: 100
-    use_haiku: true  # Titles are simple, use cheaper model
+    use_haiku: true
 
   # Summary generation
   summary:
-    abstractive_length: 280    # Target characters for AI summary
-    extractive_sentences: 3    # Number of key sentences
-    use_haiku: false           # Use full model for quality
+    abstractive_length: 280
+    extractive_sentences: 3
+    use_haiku: false
 
   # Tagging
   tags:
@@ -54,8 +130,8 @@ enrichment:
 
   # Scoring
   scoring:
-    brilliance_scale: 10       # 1-10 scale
-    use_haiku: false           # Quality judgments need full model
+    brilliance_scale: 10
+    use_haiku: false
 
   # Insights
   insights:
@@ -63,11 +139,58 @@ enrichment:
     min_insights: 1
     use_haiku: false
 
+# =============================================================================
+# Evaluation Configuration (NEW)
+# =============================================================================
+evaluation:
+  enabled: true
+  db_path: data/evaluation.db
+
+  # Tracking
+  track_recommendations: true
+  track_clustering: true
+  track_tags: true
+  track_summaries: true
+
+  # Feedback
+  enable_feedback_api: true
+  feedback_retention_days: 365
+
+  # Quality thresholds
+  min_satisfaction_rate: 0.7
+  alert_on_degradation: true
+
+# =============================================================================
+# Metrics Configuration (NEW)
+# =============================================================================
+metrics:
+  enabled: true
+  persist_metrics: true
+  metrics_path: data/metrics.json
+  dashboard_enabled: true
+
+  # Collection
+  track_api_calls: true
+  track_costs: true
+  track_latency: true
+  track_errors: true
+
+  # Retention
+  max_historical_runs: 100
+
+  # Alerting
+  enable_alerts: false
+  alert_webhook_url: null
+  error_rate_threshold: 0.1
+  cost_threshold_usd: 50.0
+
+# =============================================================================
 # Output Configuration
+# =============================================================================
 output:
   enriched_repository: data/enriched_repository.jsonl
   focus_list: data/focus_list.jsonl
-  focus_list_min_score: 7     # Minimum score for focus list
+  focus_list_min_score: 7
   processing_state: data/processing_state.json
 
   # Index files
@@ -75,17 +198,25 @@ output:
   repository_index_meta: data/repository.index.meta.json
   standardized_parquet: data/standardized_conversations.parquet
 
-  # Backup before updates
+  # Backup
   create_backups: true
   backup_dir: data/backups
 
+# =============================================================================
 # Logging
+# =============================================================================
 logging:
-  level: INFO                 # DEBUG, INFO, WARNING, ERROR
+  level: INFO
+  format: colored  # colored, json, plain
   log_file: logs/cogrepo.log
   console_output: true
+  enable_file_logging: true
+  max_file_size_mb: 10
+  backup_count: 5
 
+# =============================================================================
 # Progress Display
+# =============================================================================
 progress:
   show_progress_bar: true
   show_stats: true
