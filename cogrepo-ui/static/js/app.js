@@ -21,6 +21,7 @@ class Store {
         dateTo: '',
         minScore: 0
       },
+      sort: 'date-desc',  // default sort order
       pagination: {
         currentPage: 1,
         itemsPerPage: 25,
@@ -152,7 +153,7 @@ function renderConversationCard(conversation, query = '') {
   const relativeDate = CogRepoUI.formatRelativeTime(dateValue);
 
   const card = CogRepoUI.createElement('article', {
-    className: 'card card-interactive conversation-card stagger-item',
+    className: 'card card-interactive conversation-card conversation-card-premium stagger-item',
     dataset: { convoId: convo_id || external_id },
     tabindex: '0',
     role: 'button',
@@ -170,15 +171,17 @@ function renderConversationCard(conversation, query = '') {
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 0.5rem;">
-        ${advanced_score ? `
-          <div class="conversation-score advanced-score">
-            <span class="score-value">${advanced_score.overall}</span>
-            <span class="score-grade grade-${advanced_score.grade.replace('+', 'plus').replace('-', 'minus')}">${advanced_score.grade}</span>
-          </div>
-        ` : score ? `
-          <div class="conversation-score legacy-score">
-            <span class="score-value">${score}</span>
-            <span class="score-label">Score</span>
+        ${score ? `
+          <div class="intelligence-score-badge" style="width: 48px; height: 48px;">
+            <svg class="score-circle" viewBox="0 0 64 64">
+              <circle class="score-circle-bg" cx="32" cy="32" r="28" />
+              <circle class="score-circle-progress"
+                      cx="32" cy="32" r="28"
+                      data-score="${score >= 8 ? 'exceptional' : score >= 6 ? 'high' : score >= 4 ? 'medium' : 'low'}"
+                      stroke-dasharray="${(score / 10) * 175.93} 175.93"
+                      stroke-dashoffset="0" />
+            </svg>
+            <div class="score-number" style="font-size: 0.875rem;">${Math.round(score * 10)}</div>
           </div>
         ` : ''}
         <button class="enrich-btn" data-conversation-id="${convo_id || external_id}"
@@ -200,9 +203,9 @@ function renderConversationCard(conversation, query = '') {
       ` : ''}
       <div class="conversation-tags">
         ${(tags || []).slice(0, 5).map(tag =>
-          `<span class="tag tag-interactive" data-tag="${CogRepoUI.escapeHTML(tag)}">${CogRepoUI.escapeHTML(tag)}</span>`
+          `<span class="tag tag-premium tag-interactive" data-tag="${CogRepoUI.escapeHTML(tag)}">${CogRepoUI.escapeHTML(tag)}</span>`
         ).join('')}
-        ${tags && tags.length > 5 ? `<span class="tag">+${tags.length - 5} more</span>` : ''}
+        ${tags && tags.length > 5 ? `<span class="tag tag-premium">+${tags.length - 5}</span>` : ''}
       </div>
     </div>
   `;
@@ -628,10 +631,64 @@ class CogRepoApp {
       results = results.filter(c => (c.score || 0) >= filters.min_score);
     }
 
-    // Sort by date descending
-    results.sort((a, b) => new Date(b.create_time) - new Date(a.create_time));
+    // Apply sorting (default: date descending)
+    this.sortResults(results);
 
     return results;
+  }
+
+  /**
+   * Sort results based on current sort option
+   */
+  sortResults(results) {
+    const sortOption = this.store.state.sort || 'date-desc';
+
+    switch (sortOption) {
+      case 'relevance':
+        // If there's search metadata, sort by combined score
+        results.sort((a, b) => {
+          const scoreA = a._search?.score || 0;
+          const scoreB = b._search?.score || 0;
+          return scoreB - scoreA;
+        });
+        break;
+
+      case 'date-desc':
+        results.sort((a, b) => new Date(b.create_time) - new Date(a.create_time));
+        break;
+
+      case 'date-asc':
+        results.sort((a, b) => new Date(a.create_time) - new Date(b.create_time));
+        break;
+
+      case 'score-desc':
+        results.sort((a, b) => (b.score || 0) - (a.score || 0));
+        break;
+
+      case 'score-asc':
+        results.sort((a, b) => (a.score || 0) - (b.score || 0));
+        break;
+
+      case 'title-asc':
+        results.sort((a, b) => {
+          const titleA = (a.generated_title || a.title || '').toLowerCase();
+          const titleB = (b.generated_title || b.title || '').toLowerCase();
+          return titleA.localeCompare(titleB);
+        });
+        break;
+
+      case 'title-desc':
+        results.sort((a, b) => {
+          const titleA = (a.generated_title || a.title || '').toLowerCase();
+          const titleB = (b.generated_title || b.title || '').toLowerCase();
+          return titleB.localeCompare(titleA);
+        });
+        break;
+
+      default:
+        // Default to date descending
+        results.sort((a, b) => new Date(b.create_time) - new Date(a.create_time));
+    }
   }
 
   /**
@@ -892,13 +949,27 @@ class CogRepoApp {
     // Update header - show it when we have results or a query
     if (resultsHeader) {
       resultsHeader.style.display = (results.length > 0 || query) ? 'flex' : 'none';
+      const currentSort = this.store.state.sort || 'date-desc';
+
       resultsHeader.innerHTML = `
-        <div class="results-count">
-          <span>${results.length.toLocaleString()}</span> results
-          ${query ? `for "${CogRepoUI.escapeHTML(query)}"` : ''}
+        <div class="results-header-left">
+          <span class="results-count">
+            <span>${results.length.toLocaleString()}</span> results
+            ${query ? `for "${CogRepoUI.escapeHTML(query)}"` : ''}
+          </span>
         </div>
-        <div class="results-actions">
-          <button class="btn btn-sm btn-secondary" id="saveSearchBtn" aria-label="Save this search">
+        <div class="results-header-right">
+          <label for="sortSelect" class="sort-label">Sort by:</label>
+          <select id="sortSelect" class="sort-select">
+            <option value="relevance" ${currentSort === 'relevance' ? 'selected' : ''}>Relevance (Best Match)</option>
+            <option value="date-desc" ${currentSort === 'date-desc' ? 'selected' : ''}>Date (Newest First)</option>
+            <option value="date-asc" ${currentSort === 'date-asc' ? 'selected' : ''}>Date (Oldest First)</option>
+            <option value="score-desc" ${currentSort === 'score-desc' ? 'selected' : ''}>Intelligence Score (Highest)</option>
+            <option value="score-asc" ${currentSort === 'score-asc' ? 'selected' : ''}>Intelligence Score (Lowest)</option>
+            <option value="title-asc" ${currentSort === 'title-asc' ? 'selected' : ''}>Title (A-Z)</option>
+            <option value="title-desc" ${currentSort === 'title-desc' ? 'selected' : ''}>Title (Z-A)</option>
+          </select>
+          <button class="btn btn-sm btn-secondary" id="saveSearchBtn" aria-label="Save this search" style="margin-left: var(--space-3);">
             💾 Save
           </button>
           <button class="btn btn-sm btn-success" id="exportBtn" aria-label="Export results">
@@ -907,6 +978,11 @@ class CogRepoApp {
         </div>
       `;
 
+      // Re-attach event listeners
+      document.getElementById('sortSelect')?.addEventListener('change', (e) => {
+        this.store.setState({ sort: e.target.value });
+        this._renderResults(results, query);
+      });
       document.getElementById('saveSearchBtn')?.addEventListener('click', () => this.saveCurrentSearch());
       document.getElementById('exportBtn')?.addEventListener('click', () => this.exportResults());
     }

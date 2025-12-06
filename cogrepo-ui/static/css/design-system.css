@@ -746,7 +746,7 @@ body > * {
 
 .tag-interactive {
   cursor: pointer;
-  transition: transform var(--duration-fast) var(--ease-bounce),
+  transition: transform var(--duration-fast) var(--ease-out),
               background var(--duration-fast) var(--ease-default);
 }
 

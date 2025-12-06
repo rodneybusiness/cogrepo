@@ -627,14 +627,29 @@ def api_search():
             )
 
             # Convert SearchResult objects to dicts and apply remaining filters
-            # Use database for fast lookups instead of reading entire JSONL file
-            from database.repository import ConversationRepository
-            conv_repo = ConversationRepository(db_path)
+            # Build in-memory lookup dictionary for fast access
+            print(f"  [*] Building conversation lookup from JSONL for {len(search_results)} results...")
+            conv_lookup = {}
+            needed_ids = set(sr.convo_id for sr in search_results)
+
+            with open(repo_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        try:
+                            conv = json.loads(line)
+                            convo_id = conv.get('convo_id')
+                            if convo_id in needed_ids:
+                                conv_lookup[convo_id] = conv
+                                # Stop early if we've found all needed conversations
+                                if len(conv_lookup) == len(needed_ids):
+                                    break
+                        except (json.JSONDecodeError, ValueError):
+                            continue
 
             results = []
             for sr in search_results:
-                # Get conversation from database
-                conv = conv_repo.get(sr.convo_id)
+                conv = conv_lookup.get(sr.convo_id)
                 if conv:
                     # Apply date filters
                     conv_date = conv.get('create_time', '')

@@ -1,0 +1,780 @@
+/**
+ * CogRepo 2026 Premium Design System
+ *
+ * Award-winning, production-ready design system featuring:
+ * - Advanced glassmorphism with depth perception
+ * - Fluid, physics-based animations
+ * - Scroll-driven effects and parallax
+ * - Variable fonts with fluid typography
+ * - Magnetic interactions and haptic feedback
+ * - P3 wide color gamut support
+ * - 3D transforms and perspective
+ * - Ambient mesh gradients
+ * - Micro-interactions throughout
+ *
+ * Design Philosophy: Sophisticated, premium, effortless
+ * Inspired by: Apple Design Awards 2024, Vercel, Linear, Arc Browser
+ */
+
+/* =============================================================================
+   2026 Advanced Design Tokens
+   ============================================================================= */
+
+@supports (font-variation-settings: normal) {
+  :root {
+    /* Variable font settings for fluid typography */
+    --font-weight-light: 300;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+  }
+}
+
+:root {
+  /* -------------------------------------------------------------------------
+     P3 Wide Color Gamut (2026 standard)
+     Fallback to sRGB for older displays
+     ------------------------------------------------------------------------- */
+
+  /* Premium brand colors - P3 gamut */
+  --color-brand-purple: color(display-p3 0.4 0.25 0.85);
+  --color-brand-purple-fallback: #6640D8;
+
+  --color-brand-blue: color(display-p3 0.25 0.5 0.95);
+  --color-brand-blue-fallback: #4080F2;
+
+  --color-brand-cyan: color(display-p3 0.2 0.8 0.9);
+  --color-brand-cyan-fallback: #33CCE6;
+
+  --color-brand-pink: color(display-p3 0.95 0.3 0.7);
+  --color-brand-pink-fallback: #F24DB3;
+
+  /* Ambient mesh gradients */
+  --gradient-mesh-1:
+    radial-gradient(at 0% 0%, rgba(102, 126, 234, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(118, 75, 162, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(240, 147, 251, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(102, 126, 234, 0.1) 0px, transparent 50%);
+
+  --gradient-mesh-2:
+    radial-gradient(at 20% 80%, rgba(102, 126, 234, 0.15) 0px, transparent 40%),
+    radial-gradient(at 80% 20%, rgba(240, 147, 251, 0.15) 0px, transparent 40%),
+    radial-gradient(at 50% 50%, rgba(118, 75, 162, 0.1) 0px, transparent 50%);
+
+  /* Glassmorphism tokens */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-bg-hover: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  --glass-blur: blur(16px);
+  --glass-blur-strong: blur(24px);
+
+  /* Advanced shadows with multiple layers */
+  --shadow-soft-sm:
+    0 1px 2px -1px rgba(0, 0, 0, 0.06),
+    0 1px 3px 0 rgba(0, 0, 0, 0.08);
+
+  --shadow-soft-md:
+    0 2px 4px -2px rgba(0, 0, 0, 0.06),
+    0 4px 8px -2px rgba(0, 0, 0, 0.08),
+    0 8px 16px -4px rgba(0, 0, 0, 0.04);
+
+  --shadow-soft-lg:
+    0 4px 6px -4px rgba(0, 0, 0, 0.06),
+    0 8px 16px -4px rgba(0, 0, 0, 0.08),
+    0 16px 32px -8px rgba(0, 0, 0, 0.04),
+    0 32px 64px -16px rgba(0, 0, 0, 0.02);
+
+  --shadow-ambient:
+    0 0 0 1px rgba(0, 0, 0, 0.02),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    0 4px 6px -1px rgba(0, 0, 0, 0.08),
+    0 8px 16px -4px rgba(0, 0, 0, 0.04),
+    0 16px 32px -8px rgba(0, 0, 0, 0.02),
+    0 0 80px -20px rgba(102, 126, 234, 0.15);
+
+  /* Fluid spacing scale (based on viewport) */
+  --space-fluid-xs: clamp(0.25rem, 0.5vw, 0.5rem);
+  --space-fluid-sm: clamp(0.5rem, 1vw, 1rem);
+  --space-fluid-md: clamp(1rem, 2vw, 2rem);
+  --space-fluid-lg: clamp(2rem, 4vw, 4rem);
+  --space-fluid-xl: clamp(3rem, 6vw, 6rem);
+
+  /* Fluid typography */
+  --text-fluid-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  --text-fluid-sm: clamp(0.875rem, 0.8rem + 0.3vw, 1rem);
+  --text-fluid-base: clamp(1rem, 0.9rem + 0.5vw, 1.125rem);
+  --text-fluid-lg: clamp(1.125rem, 1rem + 0.6vw, 1.25rem);
+  --text-fluid-xl: clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --text-fluid-2xl: clamp(1.5rem, 1.3rem + 1vw, 2rem);
+  --text-fluid-3xl: clamp(2rem, 1.7rem + 1.5vw, 3rem);
+  --text-fluid-4xl: clamp(2.5rem, 2rem + 2vw, 4rem);
+
+  /* Animation timing functions (2026 natural motion) */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* Transition durations */
+  --duration-instant: 100ms;
+  --duration-fast: 200ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --duration-slower: 700ms;
+
+  /* Border radius scale */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --radius-full: 9999px;
+
+  /* Backdrop filters */
+  --backdrop-blur-sm: blur(8px);
+  --backdrop-blur-md: blur(16px);
+  --backdrop-blur-lg: blur(24px);
+  --backdrop-blur-xl: blur(40px);
+}
+
+/* Dark theme adjustments */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --glass-bg: rgba(20, 20, 30, 0.7);
+    --glass-bg-hover: rgba(30, 30, 45, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  }
+}
+
+[data-theme="dark"] {
+  --glass-bg: rgba(20, 20, 30, 0.7);
+  --glass-bg-hover: rgba(30, 30, 45, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* =============================================================================
+   Global Enhancements
+   ============================================================================= */
+
+* {
+  /* Enable hardware acceleration */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+html {
+  /* Smooth scrolling with CSS */
+  scroll-behavior: smooth;
+
+  /* Enable scroll-driven animations */
+  scroll-timeline: --page-scroll;
+
+  /* Prevent overscroll bounce on touch devices */
+  overscroll-behavior: none;
+}
+
+body {
+  /* Ambient background with mesh gradient */
+  background:
+    var(--gradient-mesh-1),
+    linear-gradient(180deg, var(--color-neutral-50) 0%, var(--color-neutral-100) 100%);
+  background-attachment: fixed;
+
+  /* Transition background smoothly */
+  transition: background 0.5s var(--ease-out-expo);
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background:
+      var(--gradient-mesh-2),
+      linear-gradient(180deg, #0a0a15 0%, #14141f 100%);
+  }
+}
+
+[data-theme="dark"] body {
+  background:
+    var(--gradient-mesh-2),
+    linear-gradient(180deg, #0a0a15 0%, #14141f 100%);
+}
+
+/* =============================================================================
+   Premium Glassmorphic Cards
+   ============================================================================= */
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-ambient);
+
+  /* 3D transform context */
+  transform-style: preserve-3d;
+  perspective: 1000px;
+
+  /* Smooth transitions */
+  transition:
+    transform var(--duration-normal) var(--ease-out-expo),
+    box-shadow var(--duration-normal) var(--ease-out-expo),
+    background var(--duration-fast) var(--ease-out-expo),
+    border-color var(--duration-fast) var(--ease-out-expo);
+}
+
+.glass-card:hover {
+  background: var(--glass-bg-hover);
+  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow:
+    var(--shadow-ambient),
+    0 0 60px -10px rgba(102, 126, 234, 0.3);
+
+  /* Subtle lift on hover */
+  transform: translateY(-2px) scale(1.005);
+}
+
+.glass-card:active {
+  /* Tactile press feedback */
+  transform: translateY(0) scale(1);
+  transition-duration: var(--duration-instant);
+}
+
+/* Magnetic effect for interactive cards */
+.glass-card[data-magnetic="true"] {
+  position: relative;
+  transition: transform var(--duration-fast) var(--ease-out-expo);
+}
+
+/* =============================================================================
+   Advanced Button System
+   ============================================================================= */
+
+.btn-2026 {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-lg);
+  border: none;
+
+  font-size: var(--text-fluid-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+
+  cursor: pointer;
+  user-select: none;
+
+  /* Smooth gradient background */
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+
+  /* Advanced shadow with multiple layers */
+  box-shadow:
+    0 0 0 0 rgba(102, 126, 234, 0),
+    var(--shadow-soft-md);
+
+  /* Transform properties for animations */
+  transform: translateY(0) scale(1);
+  transform-style: preserve-3d;
+
+  /* Smooth transitions */
+  transition:
+    transform var(--duration-normal) var(--ease-out-expo),
+    box-shadow var(--duration-normal) var(--ease-out-expo),
+    background var(--duration-fast) var(--ease-out-expo);
+
+  /* Prevent text selection */
+  -webkit-tap-highlight-color: transparent;
+
+  /* Hardware acceleration */
+  will-change: transform;
+}
+
+.btn-2026::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out-expo);
+}
+
+.btn-2026:hover {
+  background: linear-gradient(135deg, #7689ef 0%, #8559b5 100%);
+  box-shadow:
+    0 0 0 8px rgba(102, 126, 234, 0.1),
+    var(--shadow-soft-lg);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.btn-2026:hover::before {
+  opacity: 1;
+}
+
+.btn-2026:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: var(--duration-instant);
+}
+
+/* Ghost button variant */
+.btn-2026-ghost {
+  background: transparent;
+  color: var(--color-primary-600);
+  box-shadow: 0 0 0 1px rgba(102, 126, 234, 0.2) inset;
+}
+
+.btn-2026-ghost:hover {
+  background: rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 1px rgba(102, 126, 234, 0.4) inset;
+}
+
+/* =============================================================================
+   Fluid Search Bar with Ambient Glow
+   ============================================================================= */
+
+.search-2026 {
+  position: relative;
+  width: 100%;
+  max-width: 42rem;
+}
+
+.search-2026-input {
+  width: 100%;
+  padding: 1rem 1.25rem 1rem 3.5rem;
+
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur-md);
+  -webkit-backdrop-filter: var(--backdrop-blur-md);
+
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-2xl);
+
+  font-size: var(--text-fluid-base);
+  color: var(--color-neutral-900);
+
+  box-shadow: var(--shadow-soft-md);
+
+  transition:
+    all var(--duration-normal) var(--ease-out-expo);
+}
+
+.search-2026-input::placeholder {
+  color: var(--color-neutral-400);
+  transition: color var(--duration-fast) var(--ease-out-expo);
+}
+
+.search-2026-input:focus {
+  outline: none;
+  background: var(--glass-bg-hover);
+  border-color: rgba(102, 126, 234, 0.4);
+  box-shadow:
+    var(--shadow-soft-lg),
+    0 0 0 4px rgba(102, 126, 234, 0.1),
+    0 0 40px -10px rgba(102, 126, 234, 0.4);
+  transform: translateY(-1px);
+}
+
+.search-2026-input:focus::placeholder {
+  color: var(--color-neutral-300);
+}
+
+.search-2026-icon {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color-neutral-400);
+
+  transition:
+    color var(--duration-fast) var(--ease-out-expo),
+    transform var(--duration-normal) var(--ease-spring);
+}
+
+.search-2026-input:focus ~ .search-2026-icon {
+  color: var(--color-primary-500);
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* =============================================================================
+   Conversation Cards with 3D Hover Effect
+   ============================================================================= */
+
+.conversation-card-2026 {
+  position: relative;
+  padding: 1.5rem;
+
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur-md);
+  -webkit-backdrop-filter: var(--backdrop-blur-md);
+
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+
+  box-shadow: var(--shadow-soft-md);
+
+  /* 3D transform setup */
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  transform: perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0);
+
+  transition:
+    all var(--duration-normal) var(--ease-out-expo);
+
+  /* Hardware acceleration */
+  will-change: transform;
+
+  cursor: pointer;
+}
+
+.conversation-card-2026::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, transparent, rgba(102, 126, 234, 0.1));
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-out-expo);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.conversation-card-2026:hover {
+  background: var(--glass-bg-hover);
+  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow: var(--shadow-ambient);
+  transform: perspective(1000px) translateY(-4px) translateZ(20px);
+}
+
+.conversation-card-2026:hover::before {
+  opacity: 1;
+}
+
+/* Shimmer effect on hover */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.conversation-card-2026:hover::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent
+  );
+  background-size: 200% 100%;
+
+  border-radius: inherit;
+
+  animation: shimmer 2s infinite;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* =============================================================================
+   Tab Navigation with Sliding Indicator
+   ============================================================================= */
+
+.tabs-2026 {
+  position: relative;
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur-sm);
+  -webkit-backdrop-filter: var(--backdrop-blur-sm);
+
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--shadow-soft-sm);
+}
+
+.tab-2026 {
+  position: relative;
+  padding: 0.625rem 1.25rem;
+
+  font-size: var(--text-fluid-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-neutral-600);
+
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+
+  cursor: pointer;
+  z-index: 1;
+
+  transition:
+    color var(--duration-fast) var(--ease-out-expo),
+    transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.tab-2026:hover {
+  color: var(--color-neutral-900);
+}
+
+.tab-2026.active {
+  color: var(--color-primary-600);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Sliding background indicator */
+.tabs-2026::after {
+  content: '';
+  position: absolute;
+  height: calc(100% - 0.5rem);
+  background: white;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft-sm);
+  transition:
+    all var(--duration-normal) var(--ease-out-expo);
+  z-index: 0;
+}
+
+/* =============================================================================
+   Loading States with Premium Skeleton
+   ============================================================================= */
+
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-2026 {
+  position: relative;
+  background: linear-gradient(
+    90deg,
+    var(--color-neutral-200) 0%,
+    var(--color-neutral-100) 50%,
+    var(--color-neutral-200) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-2026::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    transparent
+  );
+  animation: skeleton-shimmer 2s infinite;
+}
+
+/* =============================================================================
+   Scroll-Driven Animations (2026 CSS Feature)
+   ============================================================================= */
+
+@supports (animation-timeline: scroll()) {
+  .scroll-fade-in {
+    animation: fade-in-up linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 30%;
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* =============================================================================
+   Micro-interactions and Haptic Feedback
+   ============================================================================= */
+
+/* Magnetic button effect */
+@media (hover: hover) and (pointer: fine) {
+  [data-magnetic="true"] {
+    transition: transform 0.3s var(--ease-out-expo);
+  }
+}
+
+/* Ripple effect on click */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  width: 100px;
+  height: 100px;
+  margin-top: -50px;
+  margin-left: -50px;
+  pointer-events: none;
+  transform: scale(0);
+  opacity: 0;
+}
+
+.ripple-effect:active::after {
+  animation: ripple 0.6s ease-out;
+}
+
+/* =============================================================================
+   Performance Optimizations
+   ============================================================================= */
+
+/* Hardware acceleration for animated elements */
+.glass-card,
+.btn-2026,
+.conversation-card-2026,
+.search-2026-input {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =============================================================================
+   Dark Theme Refinements
+   ============================================================================= */
+
+@media (prefers-color-scheme: dark) {
+  .search-2026-input,
+  .conversation-card-2026 {
+    color: var(--color-neutral-100);
+  }
+
+  .tab-2026 {
+    color: var(--color-neutral-400);
+  }
+
+  .tab-2026:hover {
+    color: var(--color-neutral-100);
+  }
+
+  .tab-2026.active {
+    color: var(--color-primary-400);
+  }
+
+  .skeleton-2026 {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+  }
+}
+
+[data-theme="dark"] .search-2026-input,
+[data-theme="dark"] .conversation-card-2026 {
+  color: var(--color-neutral-100);
+}
+
+[data-theme="dark"] .tab-2026 {
+  color: var(--color-neutral-400);
+}
+
+[data-theme="dark"] .tab-2026:hover {
+  color: var(--color-neutral-100);
+}
+
+[data-theme="dark"] .tab-2026.active {
+  color: var(--color-primary-400);
+}
+
+[data-theme="dark"] .skeleton-2026 {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+}
+
+/* =============================================================================
+   Print Optimizations
+   ============================================================================= */
+
+@media print {
+  .glass-card,
+  .btn-2026,
+  .conversation-card-2026 {
+    background: white !important;
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+  }
+}

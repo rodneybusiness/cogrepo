@@ -146,6 +146,25 @@
       <main id="main-content">
         <!-- Search Tab Content -->
         <div id="search-tab" class="tab-content active" role="tabpanel" aria-labelledby="search-tab-btn">
+
+        <!-- Magical Hero Section -->
+        <section class="hero-section">
+          <div class="hero-content">
+            <h2 class="hero-title">Explore Your AI Conversations</h2>
+            <p class="hero-subtitle">Search through thousands of conversations with ChatGPT, Claude, and Gemini using intelligent semantic search</p>
+            <div class="hero-search-container">
+              <input
+                type="search"
+                class="hero-search-input"
+                placeholder="Quick search... (Press Enter)"
+                id="heroSearchInput"
+                aria-label="Quick semantic search"
+              >
+              <p class="hero-search-hint">💡 For advanced filters, use the detailed search panel below</p>
+            </div>
+          </div>
+        </section>
+
         <!-- Search Panel -->
         <section class="search-panel" aria-label="Search conversations">
           <form class="search-form" role="search" onsubmit="return false;">
@@ -258,8 +277,24 @@
 
         <!-- Results Area -->
         <section class="results-area" aria-label="Search results">
-          <!-- Results Header -->
-          <div id="resultsHeader" class="results-header" style="display: none;"></div>
+          <!-- Results Header with Sort -->
+          <div id="resultsHeader" class="results-header" style="display: none;">
+            <div class="results-header-left">
+              <span id="resultsCount" class="results-count"></span>
+            </div>
+            <div class="results-header-right">
+              <label for="sortSelect" class="sort-label">Sort by:</label>
+              <select id="sortSelect" class="sort-select">
+                <option value="relevance">Relevance (Best Match)</option>
+                <option value="date-desc" selected>Date (Newest First)</option>
+                <option value="date-asc">Date (Oldest First)</option>
+                <option value="score-desc">Intelligence Score (Highest)</option>
+                <option value="score-asc">Intelligence Score (Lowest)</option>
+                <option value="title-asc">Title (A-Z)</option>
+                <option value="title-desc">Title (Z-A)</option>
+              </select>
+            </div>
+          </div>
 
           <!-- Results Container -->
           <div id="results" role="region" aria-live="polite" aria-label="Conversation results">
@@ -671,6 +706,35 @@
         statusBadge.classList.remove('loading');
         statusBadge.classList.add('error');
         statusBadge.title = 'v2 API not available - run cogrepo_enrich.py first';
+      }
+
+      // Wire up hero search
+      const heroSearchInput = document.getElementById('heroSearchInput');
+      const mainSearchInput = document.getElementById('searchInput');
+
+      if (heroSearchInput && mainSearchInput) {
+        // Search on Enter key
+        heroSearchInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter' && heroSearchInput.value.trim()) {
+            mainSearchInput.value = heroSearchInput.value;
+            window.app.performSearch(heroSearchInput.value);
+            // Scroll to results
+            document.querySelector('.results-area')?.scrollIntoView({ behavior: 'smooth' });
+          }
+        });
+      }
+
+      // Wire up sort dropdown
+      const sortSelect = document.getElementById('sortSelect');
+      if (sortSelect) {
+        sortSelect.addEventListener('change', (e) => {
+          // Update sort option in state
+          window.app.store.setState({ sort: e.target.value });
+
+          // Re-render results with new sort
+          const { filteredResults, searchQuery } = window.app.store.getState();
+          window.app._renderResults(filteredResults, searchQuery);
+        });
       }
     });
   </script>
