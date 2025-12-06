@@ -639,9 +639,11 @@ class CogRepoApp {
 
   /**
    * Sort results based on current sort option
+   * @param {Array} results - Array of conversation results to sort
+   * @param {string} sortOption - Optional sort option override (if not provided, uses store state)
    */
-  sortResults(results) {
-    const sortOption = this.store.state.sort || 'date-desc';
+  sortResults(results, sortOption = null) {
+    sortOption = sortOption || this.store.state.sort || 'date-desc';
     console.log(`[Sort] Sorting ${results.length} results by: ${sortOption}`);
 
     switch (sortOption) {
@@ -1030,10 +1032,11 @@ class CogRepoApp {
 
       // Re-attach event listeners
       document.getElementById('sortSelect')?.addEventListener('change', (e) => {
-        this.store.setState({ sort: e.target.value });
+        const newSort = e.target.value;
+        this.store.setState({ sort: newSort });
         // Make a copy of current results and re-sort
         const sortedResults = [...results];
-        this.sortResults(sortedResults);
+        this.sortResults(sortedResults, newSort);  // Pass sort option directly
         this._renderResults(sortedResults, query);
       });
       document.getElementById('saveSearchBtn')?.addEventListener('click', () => this.saveCurrentSearch());
