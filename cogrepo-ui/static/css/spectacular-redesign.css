@@ -143,20 +143,28 @@
 .results-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: var(--space-4) 0;
   margin-bottom: var(--space-4);
   border-bottom: 2px solid var(--color-neutral-100);
+  gap: var(--space-6);
+  flex-wrap: wrap;
 }
 
 .results-header-left {
-  flex: 1;
+  /* Removed flex: 1 to allow natural centering */
 }
 
 .results-count {
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 600;
-  color: var(--color-neutral-700);
+  color: var(--color-neutral-800);
+  text-align: center;
+}
+
+.results-count span {
+  color: var(--color-primary-600);
+  font-weight: 700;
 }
 
 .results-header-right {
